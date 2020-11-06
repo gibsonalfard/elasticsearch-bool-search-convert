@@ -8,19 +8,21 @@ const orConvert = function(queryValue, queryField, reference){
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
 
-            var childQuery = this.simpleConverter(childValue, queryField);
-            childQuery = childQuery.query;
+            var childQuery = simpleConverter(childValue, queryField);
+            childQuery = {
+                "bool": childQuery
+            };
             parentOperant.push(childQuery);
         }else{
             stringQuery = `{"term": {"${queryField}":"${item}"}}`
-            parentOperant.push(JSON.stringify(stringQuery));         
+            parentOperant.push(JSON.parse(stringQuery));         
         }
     }
 
     return parentOperant;
 }
 
-simpleConverter = (queryValue, queryField) => {
+const simpleConverter = (queryValue, queryField) => {
     boolOperant = {
         "must": JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)
     }
@@ -54,13 +56,11 @@ simpleConverter = (queryValue, queryField) => {
     }
 
     // Add query field
-    var query = {
-        "query":{
-            "bool": boolOperant
-        }
-    }
+    // var query = {
+    //     "bool": boolOperant
+    // }
     
-    return query;
+    return boolOperant;
 }
 
 exports.moreComplexConverter = (queryValue, queryField) => {
@@ -86,10 +86,10 @@ exports.moreComplexConverter = (queryValue, queryField) => {
             childValue = pattern[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
 
-            var query = this.simpleConverter(childValue, queryField);
+            var query = simpleConverter(childValue, queryField);
         }
     }else{
-        var query = this.simpleConverter(queryValue, queryField);
+        var query = simpleConverter(queryValue, queryField);
     }
 
     result = {
@@ -97,6 +97,8 @@ exports.moreComplexConverter = (queryValue, queryField) => {
             "bool": query
         }
     }
+
+    console.log(JSON.stringify(result));
 
     return result;
 }
