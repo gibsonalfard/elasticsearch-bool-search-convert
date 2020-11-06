@@ -1,5 +1,5 @@
-const orConvert = function(queryValue, queryField, reference){
-    list = queryValue.split(" OR ");
+const nestedConvert = function(queryValue, queryField, reference, splitOpr){
+    list = queryValue.split(splitOpr);
     parentOperant = [];
 
     for(item of list){
@@ -54,11 +54,6 @@ const simpleConverter = (queryValue, queryField) => {
             "should": operant
         }
     }
-
-    // Add query field
-    // var query = {
-    //     "bool": boolOperant
-    // }
     
     return boolOperant;
 }
@@ -75,10 +70,16 @@ exports.moreComplexConverter = (queryValue, queryField) => {
         }
 
         if(queryValue.includes("OR")){
-            var query = orConvert(queryValue, queryField, pattern);
+            var query = nestedConvert(queryValue, queryField, pattern, " OR ");
 
             query = {
                 "should": query
+            }
+        }else if(queryValue.includes("AND")){
+            var query = nestedConvert(queryValue, queryField, pattern, " AND ");
+
+            query = {
+                "must": query
             }
         }else{
             tmp = queryValue.replace("$","");
