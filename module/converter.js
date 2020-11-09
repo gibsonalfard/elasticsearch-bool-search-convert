@@ -22,39 +22,64 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     return parentOperant;
 }
 
+const notConvert = function(queryValue, queryField, reference){
+    list = queryValue.split("NOT ")
+    regex = /NOT \w+/gi
+}
+
 const simpleConverter = (queryValue, queryField) => {
     boolOperant = {
         "must": JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)
     }
 
-    if(queryValue.includes("AND")){
-        list = queryValue.split(" AND ");
-        operant = [];
+    regex = /NOT \w+/gi
+    pattern = queryValue.match(regex);
 
-        for(item of list){
-            stringQuery = `{"term": {"${queryField}":"${item}"}}`
+    if(pattern){
+        operant = [];
+        
+        for (item of pattern){
+            // queryValue = queryValue.replace(item, `$${i}`);
+            // i+= 1;
+            temp = item.replace("NOT ","");
+            stringQuery = `{"term": {"${queryField}":"${temp}"}}`
             operant.push(JSON.parse(stringQuery));
         }
 
         boolOperant = {
-            "must": operant
+            "must_not":  operant
         }
-    }
-
-    if(queryValue.includes("OR")){
-        list = queryValue.split(" OR ");
-        operant = [];
-
-        for(item of list){
-            stringQuery = `{"term": {"${queryField}":"${item}"}}`
-            operant.push(JSON.parse(stringQuery));
-        }
-
-        boolOperant = {
-            "should": operant
-        }
-    }
+        
+    }else{
+        if(queryValue.includes("AND")){
+            list = queryValue.split(" AND ");
+            operant = [];
     
+            for(item of list){
+                stringQuery = `{"term": {"${queryField}":"${item}"}}`
+                operant.push(JSON.parse(stringQuery));
+            }
+    
+            boolOperant = {
+                "must": operant
+            }
+        }
+    
+        if(queryValue.includes("OR")){
+            list = queryValue.split(" OR ");
+            operant = [];
+    
+            for(item of list){
+                stringQuery = `{"term": {"${queryField}":"${item}"}}`
+                operant.push(JSON.parse(stringQuery));
+            }
+    
+            boolOperant = {
+                "should": operant
+            }
+        }
+    }
+
     return boolOperant;
 }
 
@@ -81,6 +106,8 @@ exports.moreComplexConverter = (queryValue, queryField) => {
             query = {
                 "must": query
             }
+        }else if(queryValue.includes("NOT")){
+            var query = notConvert(queryValue, queryField, pattern);
         }else{
             tmp = queryValue.replace("$","");
 

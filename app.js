@@ -22,7 +22,7 @@ app.get("/search", async (req, res) => {
     query = converter.moreComplexConverter(queryValue, queryField);
 
     // Send Request to Elasticsearch
-    data = await getData.searchData(jsonData.request.index, query);
+    // data = await getData.searchData(jsonData.request.index, query);
 
     res.json(query);
 });
