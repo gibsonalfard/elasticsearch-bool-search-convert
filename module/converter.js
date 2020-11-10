@@ -132,39 +132,74 @@ const deMorganLaw = (expr) => {
 }
 
 exports.moreComplexConverter = (queryValue, queryField, pattern) => {
-    strQueryValue = queryValue;
+    
+    // var i = 1;
+    // for (item of pattern){
+    //     queryValue = queryValue.replace(item, `$${i}`);
+    //     i+= 1;
+    // }
 
-    var i = 1;
-    if(pattern){
-        for (item of pattern){
-            queryValue = queryValue.replace(item, `$${i}`);
-            i+= 1;
+    if(queryValue.includes("OR")){
+        var query = nestedConvert(queryValue, queryField, pattern, " OR ");
+
+        query = {
+            "should": query
         }
+    }else if(queryValue.includes("AND")){
+        var query = nestedConvert(queryValue, queryField, pattern, " AND ");
 
-        if(queryValue.includes("OR")){
-            var query = nestedConvert(queryValue, queryField, pattern, " OR ");
-
-            query = {
-                "should": query
-            }
-        }else if(queryValue.includes("AND")){
-            var query = nestedConvert(queryValue, queryField, pattern, " AND ");
-
-            query = {
-                "must": query
-            }
-        }else if(queryValue.includes("NOT")){
-            var query = notConverter(strQueryValue, queryField)
-        }else{
-            tmp = queryValue.replace("$","");
-
-            childValue = pattern[(tmp-1)];
-            childValue = childValue.replace("(","").replace(")","");
-
-            var query = simpleConverter(childValue, queryField);
+        query = {
+            "must": query
         }
     }else{
-        var query = simpleConverter(queryValue, queryField);
+        tmp = queryValue.replace("$","");
+
+        childValue = pattern[(tmp-1)];
+        childValue = childValue.replace("(","").replace(")","");
+
+        if(childValue.includes("$")){
+            var query = this.moreComplexConverter(childValue, queryField, pattern);
+        }else{
+            var query = simpleConverter(childValue, queryField);
+        }
+    }
+
+    return query;
+}
+
+exports.convertQuery = (queryValue, queryField) => {
+    strQueryValue = queryValue;
+    regex = /(\([\$\w\s]+\))/gi
+    pattern = queryValue.match(regex);
+    var query = {}
+
+    if(pattern){
+        oldSize = 0;
+        patternSize = pattern.length;
+
+        while(patternSize > 0 && patternSize > oldSize){
+            var i = 1;
+            for (item of pattern){
+                queryValue = queryValue.replace(item, `$${i}`);
+                i+= 1;
+            }
+
+            temp = queryValue.match(regex);
+            if(temp){
+                pattern = pattern.concat(temp);
+            }
+
+            oldSize = patternSize;
+            patternSize = pattern.length;
+        }
+
+        if(queryValue.includes("NOT")){
+            query = notConverter(strQueryValue, queryField)
+        }else{
+            query = this.moreComplexConverter(queryValue, queryField, pattern);
+        }
+    }else{
+        query = simpleConverter(queryValue, queryField);
     }
 
     result = {
@@ -174,9 +209,4 @@ exports.moreComplexConverter = (queryValue, queryField, pattern) => {
     }
 
     return result;
-}
-
-const convertQueury = (queryValue, queryField) => {
-    regex = /(\([\w\s]+\))/gi
-    pattern = queryValue.match(regex);
 }

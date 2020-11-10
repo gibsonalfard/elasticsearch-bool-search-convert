@@ -19,10 +19,10 @@ app.get("/search", async (req, res) => {
     var queryValue = jsonData.request.query.value;
     var queryField = jsonData.request.query.field;
     
-    query = converter.moreComplexConverter(queryValue, queryField);
+    query = converter.convertQuery(queryValue, queryField);
 
     // Send Request to Elasticsearch
-    // data = await getData.searchData(jsonData.request.index, query);
+    data = await getData.searchData(jsonData.request.index, query);
 
     res.json(query);
 });
