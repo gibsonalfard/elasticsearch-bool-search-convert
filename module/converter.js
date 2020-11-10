@@ -131,10 +131,7 @@ const deMorganLaw = (expr) => {
     return result;
 }
 
-exports.moreComplexConverter = (queryValue, queryField) => {
-    regex = /(\([\w\s]+\))/gi
-    pattern = queryValue.match(regex);
-
+exports.moreComplexConverter = (queryValue, queryField, pattern) => {
     strQueryValue = queryValue;
 
     var i = 1;
@@ -176,7 +173,10 @@ exports.moreComplexConverter = (queryValue, queryField) => {
         }
     }
 
-    console.log(JSON.stringify(result));
-
     return result;
+}
+
+const convertQueury = (queryValue, queryField) => {
+    regex = /(\([\w\s]+\))/gi
+    pattern = queryValue.match(regex);
 }
