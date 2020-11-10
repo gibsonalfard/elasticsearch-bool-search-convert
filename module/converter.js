@@ -22,11 +22,6 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     return parentOperant;
 }
 
-const notConvert = function(queryValue, queryField, reference){
-    list = queryValue.split("NOT ")
-    regex = /NOT \w+/gi
-}
-
 const simpleConverter = (queryValue, queryField) => {
     boolOperant = {
         "must": JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)
@@ -83,9 +78,49 @@ const simpleConverter = (queryValue, queryField) => {
     return boolOperant;
 }
 
+const deMorganLaw = (expr) => {
+    pattern = expr.match(/(AND|OR)/gi);
+
+    let result = ""
+    str = expr;
+
+    console.log(str);
+
+    if(pattern){
+        for(item of pattern){
+            str = str.replace(item, "^");
+        }
+
+        // Remove parentheses
+        childValue = str.replace("(","").replace(")","");
+        // Remove NOT condition
+        childValue = childValue.replace("NOT ","");
+
+        // Split string by ^ symbol
+        childList = childValue.split(" ^ ");
+
+        let i = 0;
+        for(item of childList){
+            raw = "(NOT ".concat(item).concat(")");
+            result = result.concat(raw).concat(" ");
+            if(pattern[i]){
+                result = result.concat(pattern[i]).concat(" ");
+            }
+            i += 1;
+        }
+    }else{
+        // Remove parentheses
+        result = str.replace("(","").replace(")","");
+    }
+
+    return result;
+}
+
 exports.moreComplexConverter = (queryValue, queryField) => {
     regex = /(\([\w\s]+\))/gi
     pattern = queryValue.match(regex);
+
+    strQueryValue = queryValue;
 
     var i = 1;
     if(pattern){
@@ -107,7 +142,9 @@ exports.moreComplexConverter = (queryValue, queryField) => {
                 "must": query
             }
         }else if(queryValue.includes("NOT")){
-            var query = notConvert(queryValue, queryField, pattern);
+            var newQuery = deMorganLaw(strQueryValue);
+            console.log(newQuery);
+            var query = simpleConverter(newQuery, queryField);
         }else{
             tmp = queryValue.replace("$","");
 
