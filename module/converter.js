@@ -1,3 +1,5 @@
+const { query } = require("express");
+
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     list = queryValue.split(splitOpr);
     parentOperant = [];
@@ -78,6 +80,19 @@ const simpleConverter = (queryValue, queryField) => {
     return boolOperant;
 }
 
+const notConverter = (expr, queryField) =>{
+    pattern = expr.match(/( AND | OR )/gi);
+
+    if(pattern){
+        if(pattern == " OR "){
+            queryValue = deMorganLaw(expr);
+            return simpleConverter(queryValue, queryField);
+        }
+    }
+
+    return {}
+}
+
 const deMorganLaw = (expr) => {
     pattern = expr.match(/(AND|OR)/gi);
 
@@ -142,9 +157,7 @@ exports.moreComplexConverter = (queryValue, queryField) => {
                 "must": query
             }
         }else if(queryValue.includes("NOT")){
-            var newQuery = deMorganLaw(strQueryValue);
-            console.log(newQuery);
-            var query = simpleConverter(newQuery, queryField);
+            var query = notConverter(strQueryValue, queryField)
         }else{
             tmp = queryValue.replace("$","");
 
