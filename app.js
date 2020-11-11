@@ -18,8 +18,10 @@ app.get("/search", async (req, res) => {
     jsonData = req.body;
     var queryValue = jsonData.request.query.value;
     var queryField = jsonData.request.query.field;
-    
-    query = converter.convertQuery(queryValue, queryField);
+    var aggrField = jsonData.request.aggs;
+
+    //  Convert input query into bool search query for Elasticsearch
+    query = converter.convertQuery(queryValue, queryField, aggrField);
 
     // Send Request to Elasticsearch
     data = await getData.searchData(jsonData.request.index, query);

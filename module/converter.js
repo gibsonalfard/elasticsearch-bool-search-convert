@@ -1,5 +1,3 @@
-const { query } = require("express");
-
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     list = queryValue.split(splitOpr);
     parentOperant = [];
@@ -131,14 +129,7 @@ const deMorganLaw = (expr) => {
     return result;
 }
 
-exports.moreComplexConverter = (queryValue, queryField, pattern) => {
-    
-    // var i = 1;
-    // for (item of pattern){
-    //     queryValue = queryValue.replace(item, `$${i}`);
-    //     i+= 1;
-    // }
-
+const moreComplexConverter = (queryValue, queryField, pattern) => {
     if(queryValue.includes("OR")){
         var query = nestedConvert(queryValue, queryField, pattern, " OR ");
 
@@ -158,7 +149,7 @@ exports.moreComplexConverter = (queryValue, queryField, pattern) => {
         childValue = childValue.replace("(","").replace(")","");
 
         if(childValue.includes("$")){
-            var query = this.moreComplexConverter(childValue, queryField, pattern);
+            var query = moreComplexConverter(childValue, queryField, pattern);
         }else{
             var query = simpleConverter(childValue, queryField);
         }
@@ -167,7 +158,27 @@ exports.moreComplexConverter = (queryValue, queryField, pattern) => {
     return query;
 }
 
-exports.convertQuery = (queryValue, queryField) => {
+const convertAggregation = (aggs, index = 0) => {
+    var aggrQuery = {}
+    item = aggs[index]
+
+    if(item.field.includes(">")){
+        value = item.field.split(">");
+        temp = `{"${item.name}": {"${value[0]}": {"type":"${value[1]}"}}}`;
+    }else{
+        temp = `{"${item.name}": {"terms": {"field": "${item.field}"}}}`;
+    }
+
+    aggrQuery = JSON.parse(temp);
+
+    if(index+1 < aggs.length){
+        aggrQuery[item.name].aggs = convertAggregation(aggs, index+1);
+    }
+
+    return aggrQuery;
+}
+
+exports.convertQuery = (queryValue, queryField, aggrField) => {
     strQueryValue = queryValue;
     regex = /(\([\$\w\s]+\))/gi
     pattern = queryValue.match(regex);
@@ -196,7 +207,7 @@ exports.convertQuery = (queryValue, queryField) => {
         if(queryValue.includes("NOT")){
             query = notConverter(strQueryValue, queryField)
         }else{
-            query = this.moreComplexConverter(queryValue, queryField, pattern);
+            query = moreComplexConverter(queryValue, queryField, pattern);
         }
     }else{
         query = simpleConverter(queryValue, queryField);
@@ -206,6 +217,10 @@ exports.convertQuery = (queryValue, queryField) => {
         "query":{
             "bool": query
         }
+    }
+
+    if(aggrField){
+        result.aggs = convertAggregation(aggrField);
     }
 
     return result;
