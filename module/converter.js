@@ -1,3 +1,5 @@
+const addOn = require("./addOn");
+
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     list = queryValue.split(splitOpr);
     parentOperant = [];
@@ -182,10 +184,6 @@ const convertAggregation = (aggs, index = 0) => {
     return aggrQuery;
 }
 
-const isEmpty = (obj) => {
-    return Object.keys(obj).length === 0;
-}
-
 exports.convertQuery = (queryValue, queryField, aggrField) => {
     var result = {};
     try {
@@ -229,12 +227,12 @@ exports.convertQuery = (queryValue, queryField, aggrField) => {
             }
         }
 
-        if(aggrField){
-            aggregation = convertAggregation(aggrField);
-            if(!isEmpty(aggregation)){
-                result.aggs = aggregation;
-            }
-        }
+        // if(aggrField){
+        //     aggregation = convertAggregation(aggrField);
+        //     if(!addOn.isEmpty(aggregation)){
+        //         result.aggs = aggregation;
+        //     }
+        // }
     } catch (error) {
         console.log(error.message);
     }
