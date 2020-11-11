@@ -18,5 +18,11 @@ exports.queryCondition = (jsonData) => {
         query["_source"] = jsonData.request.source;
     }
 
+    if(query.query.bool.must){
+        query.query.bool.must.push(converter.rangeConvert(jsonData.request.range));
+    }else{
+        query.query.bool.must = converter.rangeConvert(jsonData.request.range)
+    }
+
     return query;
 }

@@ -21,13 +21,13 @@ app.get("/search", async (req, res) => {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
-        data = await getData.searchData(jsonData.request.index, query);
+        // data = await getData.searchData(jsonData.request.index, query);
     } catch (error) {
         console.log("Error - Outside");
         res.json({"Error": error.message});
     }
 
-    res.json(data);
+    res.json(query);
 });
 
 app.get("/search/sentiment", async (req, res) => {

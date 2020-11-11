@@ -184,6 +184,34 @@ const convertAggregation = (aggs, index = 0) => {
     return aggrQuery;
 }
 
+exports.rangeConvert = (rangeArr) => {
+    var from = rangeArr[0];
+    var to = rangeArr[1];
+    var d = new Date();
+    var currentMs = d.getTime();
+    
+    console.log(from);
+    console.log(to);
+    if(from == "now"){
+        console.log("Masuk");
+        to = from = currentMs;
+    }else if(to){
+        
+        to = currentMs;
+    }
+    
+    var range = {
+        "range": {
+            "datetime_ms": {
+                "gte": from,
+                "lte": to
+            }
+        }
+    };
+    
+    return range;
+}
+
 exports.convertQuery = (queryValue, queryField, aggrField) => {
     var result = {};
     try {
