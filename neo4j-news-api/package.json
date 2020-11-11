@@ -1,0 +1,16 @@
+{
+  "name": "neo4j-news-api",
+  "version": "1.0.0",
+  "description": "Middleware for querying Neo4j data with JSON query, instead of Cypher query.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Cahya Ramadhan",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "neo4j-driver": "^4.1.2"
+  }
+}
