@@ -160,67 +160,83 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
 
 const convertAggregation = (aggs, index = 0) => {
     var aggrQuery = {}
-    item = aggs[index]
+    try {
+        item = aggs[index]
 
-    if(item.field.includes(">")){
-        value = item.field.split(">");
-        temp = `{"${item.name}": {"${value[0]}": {"type":"${value[1]}"}}}`;
-    }else{
-        temp = `{"${item.name}": {"terms": {"field": "${item.field}"}}}`;
-    }
+        if(item.field.includes(">")){
+            value = item.field.split(">");
+            temp = `{"${item.name}": {"${value[0]}": {"type":"${value[1]}"}}}`;
+        }else{
+            temp = `{"${item.name}": {"terms": {"field": "${item.field}"}}}`;
+        }
 
-    aggrQuery = JSON.parse(temp);
+        aggrQuery = JSON.parse(temp);
 
-    if(index+1 < aggs.length){
-        aggrQuery[item.name].aggs = convertAggregation(aggs, index+1);
+        if(index+1 < aggs.length){
+            aggrQuery[item.name].aggs = convertAggregation(aggs, index+1);
+        }
+    } catch (error) {
+        console.log(error.message);
     }
 
     return aggrQuery;
 }
 
+const isEmpty = (obj) => {
+    return Object.keys(obj).length === 0;
+}
+
 exports.convertQuery = (queryValue, queryField, aggrField) => {
-    strQueryValue = queryValue;
-    regex = /(\([\$\w\s]+\))/gi
-    pattern = queryValue.match(regex);
-    var query = {}
+    var result = {};
+    try {
+        strQueryValue = queryValue;
+        regex = /(\([\$\w\s]+\))/gi
+        pattern = queryValue.match(regex);
+        var query = {}
 
-    if(pattern){
-        oldSize = 0;
-        patternSize = pattern.length;
-
-        while(patternSize > 0 && patternSize > oldSize){
-            var i = 1;
-            for (item of pattern){
-                queryValue = queryValue.replace(item, `$${i}`);
-                i+= 1;
-            }
-
-            temp = queryValue.match(regex);
-            if(temp){
-                pattern = pattern.concat(temp);
-            }
-
-            oldSize = patternSize;
+        if(pattern){
+            oldSize = 0;
             patternSize = pattern.length;
-        }
 
-        if(queryValue.includes("NOT")){
-            query = notConverter(strQueryValue, queryField)
+            while(patternSize > 0 && patternSize > oldSize){
+                var i = 1;
+                for (item of pattern){
+                    queryValue = queryValue.replace(item, `$${i}`);
+                    i+= 1;
+                }
+
+                temp = queryValue.match(regex);
+                if(temp){
+                    pattern = pattern.concat(temp);
+                }
+
+                oldSize = patternSize;
+                patternSize = pattern.length;
+            }
+
+            if(queryValue.includes("NOT")){
+                query = notConverter(strQueryValue, queryField)
+            }else{
+                query = moreComplexConverter(queryValue, queryField, pattern);
+            }
         }else{
-            query = moreComplexConverter(queryValue, queryField, pattern);
+            query = simpleConverter(queryValue, queryField);
         }
-    }else{
-        query = simpleConverter(queryValue, queryField);
-    }
 
-    result = {
-        "query":{
-            "bool": query
+        result = {
+            "query":{
+                "bool": query
+            }
         }
-    }
 
-    if(aggrField){
-        result.aggs = convertAggregation(aggrField);
+        if(aggrField){
+            aggregation = convertAggregation(aggrField);
+            if(!isEmpty(aggregation)){
+                result.aggs = aggregation;
+            }
+        }
+    } catch (error) {
+        console.log(error.message);
     }
 
     return result;

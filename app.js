@@ -14,19 +14,25 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/search", async (req, res) => {
+    var data = {};
     // Convert Request to Elasticsearch Boolean Search
-    jsonData = req.body;
-    var queryValue = jsonData.request.query.value;
-    var queryField = jsonData.request.query.field;
-    var aggrField = jsonData.request.aggs;
+    try {
+        jsonData = req.body;
+        var queryValue = jsonData.request.query.value;
+        var queryField = jsonData.request.query.field;
+        var aggrField = jsonData.request.aggs;
 
-    //  Convert input query into bool search query for Elasticsearch
-    query = converter.convertQuery(queryValue, queryField, aggrField);
+        //  Convert input query into bool search query for Elasticsearch
+        query = converter.convertQuery(queryValue, queryField, aggrField);
 
-    // Send Request to Elasticsearch
-    data = await getData.searchData(jsonData.request.index, query);
+        // Send Request to Elasticsearch
+        data = await getData.searchData(jsonData.request.index, query);
+    } catch (error) {
+        console.log(error);
+        res.json({"Error": error.message});
+    }
 
-    res.json(query);
+    res.json(data);
 });
 
 app.listen(PORT, () => {
