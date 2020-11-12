@@ -1,0 +1,16 @@
+{
+    "request":{
+        "query" : {
+            "field": "content",
+            "value": "((jokowi AND prabowo) OR trump)",
+            "filter": {
+                "date": {
+                    "start": "2020-10-05",
+                    "end": "2020-10-06"
+                },
+                "sentiment": "neg"
+            }         
+        }
+    }
+}
+

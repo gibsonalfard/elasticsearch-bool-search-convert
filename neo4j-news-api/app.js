@@ -1,4 +1,4 @@
-const getData = require("./neo4j/get");
+const Driver = require("./neo4j/Driver");
 
 const bodyParser = require("body-parser");
 const express = require("express");
@@ -10,14 +10,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/search", async (req, res) => {
-    jsonData = req.body;
+    const jsonData = req.body;
+
+    // driver jadikan singleton?
+    const driver = new Driver();
 
     try {
-        // Params example: news_id, etc 
-        params = "";
-
-        // Query example: "MATCH (n:News) RETURN n LIMIT 25"
-        data = await getData.searchData(jsonData.query, params);
+        data = await driver.search(jsonData);
     } catch (err) {
         console.log(err);
     }
