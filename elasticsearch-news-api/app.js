@@ -21,7 +21,7 @@ app.get("/search", async (req, res) => {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
-        // data = await getData.searchData(jsonData.request.index, query);
+        data = await getData.searchData(jsonData.request.index, query);
     } catch (error) {
         console.log("Error - Outside");
         res.json({"Error": error.message});
@@ -66,6 +66,56 @@ app.get("/search/sentiment", async (req, res) => {
     }
 
     res.json(data);
+});
+
+app.get("/search/sentiment/histogram", (req, res) => {
+    var data = {};
+    var interval = "day"
+
+    if(req.query.interval){
+        interval = req.query.interval;
+    }
+
+    try {
+        jsonData = req.body;
+        
+        var query = addOn.queryCondition(jsonData)
+        query.aggs = {
+            "sentiment_over_time":{
+                "date_histogram":{
+                    "field": "datetime_ms",
+                    "calendar_interval": interval,
+                    "format": "yyyy-MM-dd:HH:mm:ss",
+                    "time_zone": "+07:00",
+                    "keyed": true,
+                    "extended_bounds": {
+                        "min": 1601485200000,
+                        "max": 1604077200000
+                    }
+                },
+                "aggs":{
+                    "to-sentiment":{
+                        "children":{
+                            "type": "sentiment"
+                        },
+                        "aggs":{
+                            "sentiment":{
+                                "terms":{
+                                    "field": "analysis.sentiment.sentiment"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // data = await getData.searchData(jsonData.request.index, query);
+    } catch (error) {
+        console.log("Error - Outside");
+        res.json({"Error": error.message});
+    }
+
+    res.json(query);
 });
 
 app.listen(PORT, () => {
