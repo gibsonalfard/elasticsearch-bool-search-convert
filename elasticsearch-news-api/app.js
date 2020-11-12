@@ -1,5 +1,6 @@
 const getData = require("./elasticsearch/get");
 const addOn = require("./module/addOn");
+const converter = require("./module/converter");
 const bodyParser = require("body-parser");
 const express = require("express");
 const { query } = require("express");
@@ -27,7 +28,7 @@ app.get("/search", async (req, res) => {
         res.json({"Error": error.message});
     }
 
-    res.json(query);
+    res.json(data);
 });
 
 app.get("/search/sentiment", async (req, res) => {
@@ -70,7 +71,14 @@ app.get("/search/sentiment", async (req, res) => {
 
 app.get("/search/sentiment/histogram", (req, res) => {
     var data = {};
+    var toDate = new Date();
+    toDate.setDate(30);
+    var fromDate = new Date();
+    fromDate.setDate(1);
+
     var interval = "day"
+    to = toDate.getTime();
+    from = fromDate.getTime();
 
     if(req.query.interval){
         interval = req.query.interval;
@@ -78,6 +86,12 @@ app.get("/search/sentiment/histogram", (req, res) => {
 
     try {
         jsonData = req.body;
+
+        if(req.body.request.range){
+            rangeConv = converter.rangeConvert(req.body.request.range);
+            to = rangeConv.to;
+            from = rangeConv.from;
+        }
         
         var query = addOn.queryCondition(jsonData)
         query.aggs = {
@@ -89,8 +103,8 @@ app.get("/search/sentiment/histogram", (req, res) => {
                     "time_zone": "+07:00",
                     "keyed": true,
                     "extended_bounds": {
-                        "min": 1601485200000,
-                        "max": 1604077200000
+                        "min": from,
+                        "max": to
                     }
                 },
                 "aggs":{

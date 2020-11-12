@@ -18,10 +18,22 @@ exports.queryCondition = (jsonData) => {
         query["_source"] = jsonData.request.source;
     }
 
-    if(query.query.bool.must){
-        query.query.bool.must.push(converter.rangeConvert(jsonData.request.range));
-    }else{
-        query.query.bool.must = converter.rangeConvert(jsonData.request.range)
+    if(jsonData.request.range){
+        rangeConv = converter.rangeConvert(jsonData.request.range);
+        range = {
+            "range": {
+                "datetime_ms": {
+                    "gte": rangeConv.from,
+                    "lte": rangeConv.to
+                }
+            }
+        }
+
+        if(query.query.bool.must){
+            query.query.bool.must.push(range);
+        }else{
+            query.query.bool.must = range;
+        }
     }
 
     return query;
