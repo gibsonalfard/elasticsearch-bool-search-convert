@@ -1,7 +1,11 @@
 const converter = require("./converter");
 
 exports.isEmpty = (obj) => {
-    return Object.keys(obj).length === 0;
+    if(obj != null){
+        return Object.keys(obj).length === 0;
+    }else{
+        return true;
+    }
 }
 
 exports.queryCondition = (jsonData) => {
@@ -28,7 +32,7 @@ exports.queryCondition = (jsonData) => {
                 }
             }
         }
-
+        
         if(query.query.bool.must){
             query.query.bool.must.push(range);
         }else{

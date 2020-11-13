@@ -26,7 +26,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
 
 const simpleConverter = (queryValue, queryField) => {
     boolOperant = {
-        "must": JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)
+        "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
     regex = /NOT \w+/gi
@@ -199,10 +199,8 @@ exports.rangeConvert = (rangeArr) => {
     var currentMs = d.getTime();
     
     if(from == "now"){
-        console.log("Masuk");
         to = from = currentMs;
-    }else if(to){
-        
+    }else if(to == "now"){
         to = currentMs;
     }
     
@@ -256,13 +254,7 @@ exports.convertQuery = (queryValue, queryField, aggrField) => {
                 "bool": query
             }
         }
-
-        // if(aggrField){
-        //     aggregation = convertAggregation(aggrField);
-        //     if(!addOn.isEmpty(aggregation)){
-        //         result.aggs = aggregation;
-        //     }
-        // }
+        
     } catch (error) {
         console.log(error.message);
     }
