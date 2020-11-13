@@ -50,3 +50,14 @@ exports.queryCondition = (jsonData) => {
 
     return query;
 }
+
+exports.logAccess = (endpoint, body, ip) => {
+    var date = new Date();
+    date.setHours(date.getHours() + 7);
+    var dateStr = date.toISOString();
+
+    console.log(dateStr,"IP-ADDRESS:",ip);
+    console.log(dateStr,"ENDPOINT",endpoint);
+    console.log(dateStr,"REQUEST-BODY",JSON.stringify(body));
+    console.log("");
+}

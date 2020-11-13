@@ -17,6 +17,14 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/search", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search", req.body, ip);
+
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
     try {
@@ -36,6 +44,14 @@ app.get("/search", async (req, res) => {
 });
 
 app.get("/search/sentiment", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search/sentiment", req.body, ip);
+
     var data = {};
 
     try {
@@ -77,6 +93,14 @@ app.get("/search/sentiment", async (req, res) => {
 });
 
 app.get("/search/sentiment/histogram", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search/sentiment/histogram", req.body, ip);
+
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
@@ -143,6 +167,4 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     res.json(data);
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}.`);
-});
+app.listen(PORT, () => {});
