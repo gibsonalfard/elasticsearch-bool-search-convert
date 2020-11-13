@@ -44,7 +44,15 @@ const simpleConverter = (queryValue, queryField) => {
         }
 
         boolOperant = {
-            "must_not":  operant
+            "must_not":  operant,
+            "must":{
+                "has_child":{
+                    "type": "sentiment",
+                    "query": {
+                        "bool":{}
+                    }
+                }
+            }
         }
         
     }else{
@@ -190,8 +198,6 @@ exports.rangeConvert = (rangeArr) => {
     var d = new Date();
     var currentMs = d.getTime();
     
-    console.log(from);
-    console.log(to);
     if(from == "now"){
         console.log("Masuk");
         to = from = currentMs;
@@ -201,12 +207,8 @@ exports.rangeConvert = (rangeArr) => {
     }
     
     var range = {
-        "range": {
-            "datetime_ms": {
-                "gte": from,
-                "lte": to
-            }
-        }
+        "from": from,
+        "to": to
     };
     
     return range;
