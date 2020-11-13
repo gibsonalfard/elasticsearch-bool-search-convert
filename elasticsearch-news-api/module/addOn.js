@@ -10,12 +10,21 @@ exports.isEmpty = (obj) => {
 
 exports.queryCondition = (jsonData) => {
     // jsonData = req.body;
-    var queryValue = jsonData.request.query.value;
-    var queryField = jsonData.request.query.field;
-    var aggrField = jsonData.request.aggs;
+    var baseQuery = jsonData.request.query;
+    var query = {
+        "query":{
+            "bool":{}
+        }
+    };
 
-    //  Convert input query into bool search query for Elasticsearch
-    var query = converter.convertQuery(queryValue, queryField, aggrField);
+    for(listQuery of baseQuery){
+        var queryValue = listQuery.value;
+        var queryField = listQuery.field;
+
+        //  Convert input query into bool search query for Elasticsearch
+        var queryTemp = converter.convertQuery(queryValue, queryField);
+        query = converter.mergeQuery(query, queryTemp);
+    }
 
     // Send Request to Elasticsearch
     if(!this.isEmpty(jsonData.request.source)){
@@ -32,7 +41,6 @@ exports.queryCondition = (jsonData) => {
                 }
             }
         }
-        
         if(query.query.bool.must){
             query.query.bool.must.push(range);
         }else{

@@ -45,14 +45,14 @@ const simpleConverter = (queryValue, queryField) => {
 
         boolOperant = {
             "must_not":  operant,
-            "must":{
+            "must":[{
                 "has_child":{
                     "type": "sentiment",
                     "query": {
                         "bool":{}
                     }
                 }
-            }
+            }]
         }
         
     }else{
@@ -212,7 +212,7 @@ exports.rangeConvert = (rangeArr) => {
     return range;
 }
 
-exports.convertQuery = (queryValue, queryField, aggrField) => {
+exports.convertQuery = (queryValue, queryField) => {
     var result = {};
     try {
         strQueryValue = queryValue;
@@ -260,4 +260,38 @@ exports.convertQuery = (queryValue, queryField, aggrField) => {
     }
 
     return result;
+}
+
+exports.mergeQuery = (query1, query2) => {
+    if(query2.query.bool.must){
+        for(item of query2.query.bool.must){
+            if(query1.query.bool.must){
+                query1.query.bool.must.push(item);
+            }else{
+                query1.query.bool.must = [item];
+            }
+        }
+    }
+
+    if(query2.query.bool.should){
+        for(item of query2.query.bool.should){
+            if(query1.query.bool.should){
+                query1.query.bool.should.push(item);
+            }else{
+                query1.query.bool.should = [item];
+            }
+        }
+    }
+
+    if(query2.query.bool["must_not"]){
+        for(item of query2.query.bool["must_not"]){
+            if(query1.query.bool["must_not"]){
+                query1.query.bool["must_not"].push(item);
+            }else{
+                query1.query.bool["must_not"] = [item];
+            }
+        }
+    }
+
+    return query1;
 }
