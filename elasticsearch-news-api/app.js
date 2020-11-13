@@ -123,13 +123,13 @@ app.get("/search/sentiment/histogram", (req, res) => {
                 }
             }
         }
-        // data = await getData.searchData(jsonData.request.index, query);
+        data = await getData.searchData(jsonData.request.index, query);
     } catch (error) {
         console.log("Error - Outside");
         res.json({"Error": error.message});
     }
 
-    res.json(query);
+    res.json(data);
 });
 
 app.listen(PORT, () => {
