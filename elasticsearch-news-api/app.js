@@ -69,7 +69,7 @@ app.get("/search/sentiment", async (req, res) => {
     res.json(data);
 });
 
-app.get("/search/sentiment/histogram", (req, res) => {
+app.get("/search/sentiment/histogram", async (req, res) => {
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
