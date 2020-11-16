@@ -283,6 +283,16 @@ exports.convertQuery = (queryValue, queryField) => {
     return result;
 }
 
+exports.andMerge = (query1, query2) => {
+    if(query1.query.bool.must){
+        query1.query.bool.must.push(query2.query);
+    }else{
+        query1.query.bool.must = [query2.query];
+    }
+
+    return query1;
+}
+
 exports.mergeQuery = (query1, query2) => {
     if(query2.query.bool.must){
         for(item of query2.query.bool.must){

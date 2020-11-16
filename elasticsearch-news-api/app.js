@@ -27,20 +27,20 @@ app.get("/search", async (req, res) => {
 
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
-    try {
+    // try {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
-        responseData = await getData.searchData(jsonData.request.index, query);
+        // responseData = await getData.searchData(jsonData.request.index, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
-        data = formatter.outputJSONFormatter(responseData);
-    } catch (error) {
-        console.log("Error - Outside");
-        data = {"Error": error.message}
-    }
+        // data = formatter.outputJSONFormatter(responseData);
+    // } catch (error) {
+    //     console.log("Error - Outside");
+    //     data = {"Error": error.message}
+    // }
 
-    res.json(data);
+    res.json(query);
 });
 
 app.get("/search/sentiment", async (req, res) => {
