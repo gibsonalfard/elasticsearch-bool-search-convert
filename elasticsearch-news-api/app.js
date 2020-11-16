@@ -99,8 +99,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
-    addOn.logAccess("[GET] /search/sentiment/histogram", req.body, ip);
-
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
@@ -110,10 +108,14 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     var interval = "day"
     to = toDate.getTime();
     from = fromDate.getTime();
+    var urlLog = "[GET] /search/sentiment/histogram";
 
     if(req.query.interval){
         interval = req.query.interval;
+        urlLog = `[GET] /search/sentiment/histogram?interval=${interval}`;
     }
+
+    addOn.logAccess(urlLog, req.body, ip);
 
     try {
         if(req.body.request.range){
