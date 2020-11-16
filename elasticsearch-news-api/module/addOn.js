@@ -23,6 +23,9 @@ exports.queryCondition = (jsonData) => {
 
         //  Convert input query into bool search query for Elasticsearch
         var queryTemp = converter.convertQuery(queryValue, queryField);
+        if(queryTemp.error){
+            return queryTemp;
+        }
         query = converter.mergeQuery(query, queryTemp);
     }
 

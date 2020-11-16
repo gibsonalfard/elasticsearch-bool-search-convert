@@ -1,3 +1,4 @@
+const { query } = require("express");
 const addOn = require("./addOn");
 
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
@@ -5,12 +6,17 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     parentOperant = [];
 
     for(item of list){
+        console.log(item);
         if(item[0] == "$"){
             tmp = item.replace("$","");
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
 
             var childQuery = simpleConverter(childValue, queryField);
+            if(childQuery.error){
+                return childQuery;
+            }
+
             childQuery = {
                 "bool": childQuery
             };
@@ -25,7 +31,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
 }
 
 const simpleConverter = (queryValue, queryField) => {
-    boolOperant = {
+    var boolOperant = {
         "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
@@ -33,11 +39,10 @@ const simpleConverter = (queryValue, queryField) => {
     pattern = queryValue.match(regex);
 
     if(pattern){
-        operant = [];
+        var operant = [];
+        queryValue = queryValue.replace(/NOT \w+/gi, "");
         
         for (item of pattern){
-            // queryValue = queryValue.replace(item, `$${i}`);
-            // i+= 1;
             temp = item.replace("NOT ","");
             stringQuery = `{"term": {"${queryField}":"${temp}"}}`
             operant.push(JSON.parse(stringQuery));
@@ -55,41 +60,36 @@ const simpleConverter = (queryValue, queryField) => {
             }]
         }
         
-    }else{
-        if(queryValue.includes("AND")){
-            list = queryValue.split(" AND ");
-            operant = [];
-    
-            for(item of list){
-                stringQuery = `{"term": {"${queryField}":"${item}"}}`
+    }
+
+    operator = queryValue.match(/( AND | OR )/gi);
+
+    if(operator){
+        boolOperant.must = undefined;
+        if(operator.length > 1){
+            return {"error": "Missing Parentheses"}
+        }
+        list = queryValue.split(operator);
+        var operant = [];
+
+        for(item of list){
+            if(item != " " && item != ""){
+                stringQuery = `{"term": {"${queryField}":"${item}"}}`;
                 operant.push(JSON.parse(stringQuery));
             }
-    
-            boolOperant = {
-                "must": operant
-            }
         }
-    
-        if(queryValue.includes("OR")){
-            list = queryValue.split(" OR ");
-            operant = [];
-    
-            for(item of list){
-                stringQuery = `{"term": {"${queryField}":"${item}"}}`
-                operant.push(JSON.parse(stringQuery));
-            }
-    
-            boolOperant = {
-                "should": operant
-            }
-        }
+
+        key = operator == " AND " ? "must" : "should";
+        boolOperant[key] = operant;
     }
 
     return boolOperant;
 }
 
 const notConverter = (expr, queryField) =>{
+    console.log(expr);
     pattern = expr.match(/( AND | OR )/gi);
+    console.log(pattern);
 
     if(pattern){
         if(pattern == " OR "){
@@ -247,6 +247,10 @@ exports.convertQuery = (queryValue, queryField) => {
             }
         }else{
             query = simpleConverter(queryValue, queryField);
+
+            if(query.error){
+                return query;
+            }
         }
 
         result = {
