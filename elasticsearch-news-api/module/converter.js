@@ -66,13 +66,16 @@ const simpleConverter = (queryValue, queryField) => {
                 }
             }]
         }
-        
+
     }
 
     operator = queryValue.match(/( AND | OR )/gi);
 
     if(operator){
-        boolOperant.must = undefined;
+        if(!boolOperant.must_not){
+            boolOperant.must = undefined;
+        }
+
         if(operator.includes(" AND ") && operator.includes(" OR ")){
             return {"error": "Missing Parentheses"}
         }
@@ -88,27 +91,26 @@ const simpleConverter = (queryValue, queryField) => {
         }
 
         key = operator == " AND " ? "must" : "should";
-        boolOperant[key] = operant;
+        if(!addOn.isEmpty(operant)){
+            if(key == "must" && boolOperant["must_not"]){
+                boolOperant[key].push(operant);
+            }else{
+                boolOperant[key] = operant;
+            }
+        }
     }
 
     return boolOperant;
 }
 
 const notConverter = (expr, queryField) =>{
-    console.log(expr);
     pattern = expr.match(/( AND | OR )/gi);
-    console.log(pattern);
 
     if(pattern){
         if(pattern.includes(" OR ")){
             queryValue = deMorganLaw(expr);
             queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
-        }else if(pattern.includes(" AND ")){
-            queryValue = deMorganLaw(expr);
-            console.log(queryValue);
-            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
-            console.log(queryValue);
         }
     }
 

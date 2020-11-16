@@ -8,7 +8,9 @@ exports.outputJSONFormatter = (elasticResponse) => {
     for(hit of elasticResponse.hits.hits){
         formatData = hit._source;
         formatData.score = hit._score;
-        formatData.sentiment = getSentimentById(hit._id, elasticResponse.aggregations);
+        if(elasticResponse.aggregations){
+            formatData.sentiment = getSentimentById(hit._id, elasticResponse.aggregations);
+        }
 
         jsonData.push(formatData);
     }
