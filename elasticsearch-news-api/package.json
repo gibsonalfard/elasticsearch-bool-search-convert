@@ -1,12 +1,12 @@
 {
   "name": "queryconverter",
   "version": "1.0.0",
-  "description": "",
+  "description": "Middleware for convert JSON request query to Elasticsearch boolean search query",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Ilham Gibran",
+  "author": "Ilham Gibran Achmad Mudzakir",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
