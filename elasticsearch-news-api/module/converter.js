@@ -6,12 +6,11 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     parentOperant = [];
 
     for(item of list){
-        console.log(item);
         if(item[0] == "$"){
             tmp = item.replace("$","");
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
-
+            
             var childQuery = simpleConverter(childValue, queryField);
             if(childQuery.error){
                 return childQuery;
@@ -21,8 +20,16 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
                 "bool": childQuery
             };
             parentOperant.push(childQuery);
+        }else if(item){
+            var childQuery = simpleConverter(item, queryField);
+            if(childQuery.error){
+                return childQuery;
+            }
+            parentOperant.push({
+                "bool": childQuery
+            });
         }else{
-            stringQuery = `{"term": {"${queryField}":"${item}"}}`
+            stringQuery = `{"term": {"${queryField}":"${item}"}}`;
             parentOperant.push(JSON.parse(stringQuery));         
         }
     }
@@ -66,10 +73,11 @@ const simpleConverter = (queryValue, queryField) => {
 
     if(operator){
         boolOperant.must = undefined;
-        if(operator.length > 1){
+        if(operator.includes(" AND ") && operator.includes(" OR ")){
             return {"error": "Missing Parentheses"}
         }
-        list = queryValue.split(operator);
+
+        list = queryValue.split(operator[0]);
         var operant = [];
 
         for(item of list){
@@ -92,9 +100,15 @@ const notConverter = (expr, queryField) =>{
     console.log(pattern);
 
     if(pattern){
-        if(pattern == " OR "){
+        if(pattern.includes(" OR ")){
             queryValue = deMorganLaw(expr);
+            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
+        }else if(pattern.includes(" AND ")){
+            queryValue = deMorganLaw(expr);
+            console.log(queryValue);
+            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
+            console.log(queryValue);
         }
     }
 
@@ -127,7 +141,8 @@ const deMorganLaw = (expr) => {
             raw = "(NOT ".concat(item).concat(")");
             result = result.concat(raw).concat(" ");
             if(pattern[i]){
-                result = result.concat(pattern[i]).concat(" ");
+                negate = pattern[i] == "AND" ? "OR" : "AND";
+                result = result.concat(negate).concat(" ");
             }
             i += 1;
         }
@@ -240,7 +255,7 @@ exports.convertQuery = (queryValue, queryField) => {
                 patternSize = pattern.length;
             }
 
-            if(queryValue.includes("NOT")){
+            if(queryValue.match(/NOT\s?\(+/)){
                 query = notConverter(strQueryValue, queryField)
             }else{
                 query = moreComplexConverter(queryValue, queryField, pattern);
