@@ -1,11 +1,11 @@
-const { isEmpty } = require("./addOn");
+const addOn = require("./addOn");
 
 exports.quoteFormatter = (text, list) => {
     for(item of list){
         replaceRaw = item.replace(/[\"\']/g, "");
         replacement = replaceRaw.replace(/\s/g, " AND ");
         replacement = `(${replacement})`;
-        
+
         text = text.replace(item,replacement);
     }
 
@@ -53,7 +53,7 @@ exports.histogramFormatter = (elasticResponse) => {
                 }
             }
             sentimentStr = sentimentStr.concat("}").replace(", }","}");
-            if(isEmpty(sentimentList) ? !emptySentimentList : emptySentimentList){
+            if(addOn.isEmpty(sentimentList) ? !emptySentimentList : emptySentimentList){
                 emptySentimentList = false;
             }
         }else{

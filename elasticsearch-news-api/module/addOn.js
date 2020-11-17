@@ -19,29 +19,31 @@ exports.queryCondition = (jsonData) => {
     };
 
     var index = 0;
-    for(listQuery of baseQuery){
-        var queryValue = listQuery.value;
-        var queryField = listQuery.field;
-        var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
-
-        // Format queryValue
-        quotedList = queryValue.match(/([\"][\w\s]+\")?([\'][\w\s]+\')/g);
-        if(quotedList){
-            queryValue = formatter.quoteFormatter(queryValue, quotedList);
+    if(baseQuery){
+        for(listQuery of baseQuery){
+            var queryValue = listQuery.value;
+            var queryField = listQuery.field;
+            var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
+    
+            // Format queryValue
+            quotedList = queryValue.match(/([\"][\w\s]+\")?([\'][\w\s]+\')/g);
+            if(quotedList){
+                queryValue = formatter.quoteFormatter(queryValue, quotedList);
+            }
+    
+            // Convert input query into bool search query for Elasticsearch
+            var queryTemp = converter.convertQuery(queryValue, queryField);
+            if(queryTemp.error){
+                return queryTemp;
+            }
+    
+            if(andMerge){
+                query = converter.andMerge(query, queryTemp);
+            }else{
+                query = converter.mergeQuery(query, queryTemp);
+            }
+            index += 1;
         }
-
-        // Convert input query into bool search query for Elasticsearch
-        var queryTemp = converter.convertQuery(queryValue, queryField);
-        if(queryTemp.error){
-            return queryTemp;
-        }
-
-        if(andMerge){
-            query = converter.andMerge(query, queryTemp);
-        }else{
-            query = converter.mergeQuery(query, queryTemp);
-        }
-        index += 1;
     }
 
     // Send Request to Elasticsearch
