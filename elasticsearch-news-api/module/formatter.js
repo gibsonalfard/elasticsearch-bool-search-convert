@@ -110,8 +110,6 @@ const getSentimentById = (id, aggregation) => {
         }
     }
 
-    // console.log(sentimentRaw);
-
     var sentimentStr = "{";
     for(item of sentimentRaw["to-sentiment"]["by-sentiment"].buckets){
         sentimentStr = sentimentStr.concat(`"${item.key}": ${item.doc_count}, `);

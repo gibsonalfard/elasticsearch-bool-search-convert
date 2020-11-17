@@ -29,6 +29,14 @@ app.get("/search", async (req, res) => {
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
+
+        if(jsonData.request.index === undefined){
+            data = {"Error": "Index Not Defined"};
+            console.log("Index Not Defined");
+            res.json(data);
+
+            return 0;
+        }
         
         var query = addOn.queryCondition(jsonData)
         responseData = await getData.searchData(jsonData.request.index, query);
@@ -56,6 +64,14 @@ app.get("/search/sentiment", async (req, res) => {
 
     try {
         jsonData = req.body;
+
+        if(jsonData.request.index === undefined){
+            data = {"Error": "Index Not Defined"};
+            console.log("Index Not Defined");
+            res.json(data);
+
+            return 0;
+        }
 
         var query = addOn.queryCondition(jsonData)
         query.aggs = {
@@ -116,6 +132,14 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     }
 
     addOn.logAccess(urlLog, req.body, ip);
+
+    if(jsonData.request.index === undefined){
+        data = {"Error": "Index Not Defined"};
+        console.log("Index Not Defined");
+        res.json(data);
+
+        return 0;
+    }
 
     try {
         if(req.body.request.range){
