@@ -49,7 +49,7 @@ Keys | Status |Explanation
             "value": "electronic AND home" 
         },{
             "field": "tags",
-            "value": "best selling" 
+            "value": "'best selling'" 
         }]
     }
 }
