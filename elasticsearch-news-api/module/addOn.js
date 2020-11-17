@@ -23,11 +23,15 @@ exports.queryCondition = (jsonData) => {
         var queryField = listQuery.field;
         var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
 
-        //  Convert input query into bool search query for Elasticsearch
+        // Format queryValue
+        queryValue = queryValue.replace(/\"/g, "\\\"");
+
+        // Convert input query into bool search query for Elasticsearch
         var queryTemp = converter.convertQuery(queryValue, queryField);
         if(queryTemp.error){
             return queryTemp;
         }
+
         if(andMerge){
             query = converter.andMerge(query, queryTemp);
         }else{
@@ -63,6 +67,7 @@ exports.queryCondition = (jsonData) => {
 
 exports.logAccess = (endpoint, body, ip) => {
     var date = new Date();
+    // Change Timezone to Asia/Jakarta (+7)
     date.setHours(date.getHours() + 7);
     var dateStr = date.toISOString();
 
