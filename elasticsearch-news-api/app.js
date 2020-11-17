@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res)=>{
-    res.json({ message: "Welcome to GibsonAlfard application." });
+    res.json({ message: "Welcome to Elastisearch Middleware." });
 });
 
 app.get("/search", async (req, res) => {
@@ -156,10 +156,15 @@ app.get("/search/sentiment/histogram", async (req, res) => {
                 }
             }
         }
-        response = await getData.searchData(jsonData.request.index, query);
 
-        // Convert Elasticsearch Response to Simpler JSON Format
-        data = formatter.histogramFormatter(response);
+        try {
+            response = await getData.searchData(jsonData.request.index, query);
+
+            // Convert Elasticsearch Response to Simpler JSON Format
+            data = formatter.histogramFormatter(response);
+        } catch (error) {
+            data = {"Error": "Invalid range for interval parameter"};
+        }
     } catch (error) {
         console.log("Error - Outside");
         data = {"Error": error.message};
