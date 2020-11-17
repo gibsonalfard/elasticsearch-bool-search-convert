@@ -1,5 +1,17 @@
 const { isEmpty } = require("./addOn");
 
+exports.quoteFormatter = (text, list) => {
+    for(item of list){
+        replaceRaw = item.replace(/[\"\']/g, "");
+        replacement = replaceRaw.replace(/\s/g, " AND ");
+        replacement = `(${replacement})`;
+        
+        text = text.replace(item,replacement);
+    }
+
+    return text;
+}
+
 exports.outputJSONFormatter = (elasticResponse) => {
     var jsonData = [];
     var formatData = {};

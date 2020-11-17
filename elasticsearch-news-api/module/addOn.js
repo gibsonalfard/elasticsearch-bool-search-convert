@@ -1,4 +1,5 @@
 const converter = require("./converter");
+const formatter = require("./formatter");
 
 exports.isEmpty = (obj) => {
     if(obj != null){
@@ -24,7 +25,10 @@ exports.queryCondition = (jsonData) => {
         var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
 
         // Format queryValue
-        queryValue = queryValue.replace(/\"/g, "\\\"");
+        quotedList = queryValue.match(/([\"][\w\s]+\")?([\'][\w\s]+\')/g);
+        if(quotedList){
+            queryValue = formatter.quoteFormatter(queryValue, quotedList);
+        }
 
         // Convert input query into bool search query for Elasticsearch
         var queryTemp = converter.convertQuery(queryValue, queryField);
@@ -58,7 +62,13 @@ exports.queryCondition = (jsonData) => {
         if(query.query.bool.must){
             query.query.bool.must.push(range);
         }else{
-            query.query.bool.must = range;
+            if(query.query.bool.should){
+                query.query.bool.must = [range, {"bool": {"should": query.query.bool.should}}];
+                query.query.bool.should = undefined;
+                // query.query.bool.should.push({"bool": {"must": range}});
+            }else{
+                query.query.bool.must = [range];
+            }
         }
     }
 
