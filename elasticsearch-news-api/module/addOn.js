@@ -23,24 +23,32 @@ exports.queryCondition = (jsonData) => {
         for(listQuery of baseQuery){
             var queryValue = listQuery.value;
             var queryField = listQuery.field;
+            var queryRange = listQuery.range;
             var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
     
-            // Format queryValue
-            quotedList = queryValue.match(/([\"][\w\s]+\")?([\'][\w\s]+\')/g);
-            if(quotedList){
-                queryValue = formatter.quoteFormatter(queryValue, quotedList);
-            }
-    
-            // Convert input query into bool search query for Elasticsearch
-            var queryTemp = converter.convertQuery(queryValue, queryField);
-            if(queryTemp.error){
-                return queryTemp;
-            }
-    
-            if(andMerge){
-                query = converter.andMerge(query, queryTemp);
-            }else{
-                query = converter.mergeQuery(query, queryTemp);
+            if(queryValue){
+                // Format queryValue
+                quotedList = queryValue.match(/([\"][\w\s]+\")?([\'][\w\s]+\')/g);
+                if(quotedList){
+                    queryValue = formatter.quoteFormatter(queryValue, quotedList);
+                }
+        
+                // Convert input query into bool search query for Elasticsearch
+                var queryTemp = converter.convertQuery(queryValue, queryField);
+                if(queryTemp.error){
+                    return queryTemp;
+                }
+        
+                if(andMerge){
+                    query = converter.andMerge(query, queryTemp);
+                }else{
+                    query = converter.mergeQuery(query, queryTemp);
+                }
+            }else if(queryRange){
+                rangeConv = converter.numberRangeConvert(queryRange);
+                range = `{ "range":{"${queryField}": ${JSON.stringify(rangeConv)}}}`;
+
+                query = rangeInsert(query, JSON.parse(range));
             }
             index += 1;
         }
@@ -61,15 +69,21 @@ exports.queryCondition = (jsonData) => {
                 }
             }
         }
-        if(query.query.bool.must){
-            query.query.bool.must.push(range);
+        query = rangeInsert(query, range);
+    }
+
+    return query;
+}
+
+const rangeInsert = (query, range) => {
+    if(query.query.bool.must){
+        query.query.bool.must.push(range);
+    }else{
+        if(query.query.bool.should){
+            query.query.bool.must = [range, {"bool": {"should": query.query.bool.should}}];
+            query.query.bool.should = undefined;
         }else{
-            if(query.query.bool.should){
-                query.query.bool.must = [range, {"bool": {"should": query.query.bool.should}}];
-                query.query.bool.should = undefined;
-            }else{
-                query.query.bool.must = [range];
-            }
+            query.query.bool.must = [range];
         }
     }
 

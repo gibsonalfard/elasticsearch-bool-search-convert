@@ -209,6 +209,22 @@ const convertAggregation = (aggs, index = 0) => {
     return aggrQuery;
 }
 
+exports.numberRangeConvert = (rangeArr) => {
+    var from = rangeArr[0];
+    var to = rangeArr[1];
+    var range = {};
+    
+    if(from > 0 ){
+        range.gte = from;
+    }
+
+    if(to > 0){
+        range.lte = to;
+    }
+
+    return range
+}
+
 exports.rangeConvert = (rangeArr) => {
     var from = rangeArr[0];
     var to = rangeArr[1];
