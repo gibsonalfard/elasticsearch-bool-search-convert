@@ -65,7 +65,6 @@ exports.queryCondition = (jsonData) => {
             if(query.query.bool.should){
                 query.query.bool.must = [range, {"bool": {"should": query.query.bool.should}}];
                 query.query.bool.should = undefined;
-                // query.query.bool.should.push({"bool": {"must": range}});
             }else{
                 query.query.bool.must = [range];
             }
