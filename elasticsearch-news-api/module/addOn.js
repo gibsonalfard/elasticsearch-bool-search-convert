@@ -55,8 +55,8 @@ exports.queryCondition = (jsonData) => {
     }
 
     // Send Request to Elasticsearch
-    if(!this.isEmpty(jsonData.request.source)){
-        query["_source"] = jsonData.request.source;
+    if(!this.isEmpty(jsonData.request.select)){
+        query["_source"] = jsonData.request.select;
     }
 
     if(jsonData.request.range){

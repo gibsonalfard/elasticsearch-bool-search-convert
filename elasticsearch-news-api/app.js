@@ -30,16 +30,16 @@ app.get("/search", async (req, res) => {
     try {
         jsonData = req.body;
 
-        if(jsonData.request.index === undefined){
-            data = {"Error": "Index Not Defined"};
-            console.log("Index Not Defined");
+        if(jsonData.request.source === undefined){
+            data = {"Error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
             res.json(data);
 
             return 0;
         }
         
         var query = addOn.queryCondition(jsonData)
-        responseData = await getData.searchData(jsonData.request.index, query);
+        responseData = await getData.searchData(jsonData.request.source, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
@@ -65,9 +65,9 @@ app.get("/search/sentiment", async (req, res) => {
     try {
         jsonData = req.body;
 
-        if(jsonData.request.index === undefined){
-            data = {"Error": "Index Not Defined"};
-            console.log("Index Not Defined");
+        if(jsonData.request.source === undefined){
+            data = {"Error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
             res.json(data);
 
             return 0;
@@ -96,7 +96,7 @@ app.get("/search/sentiment", async (req, res) => {
             }
         }
 
-        responseData = await getData.searchData(jsonData.request.index, query);
+        responseData = await getData.searchData(jsonData.request.source, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
@@ -133,15 +133,15 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 
     addOn.logAccess(urlLog, req.body, ip);
 
-    if(jsonData.request.index === undefined){
-        data = {"Error": "Index Not Defined"};
-        console.log("Index Not Defined");
-        res.json(data);
-
-        return 0;
-    }
-
     try {
+        if(req.body.request.source === undefined){
+            data = {"Error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
+            res.json(data);
+    
+            return 0;
+        }
+
         if(req.body.request.range){
             rangeConv = converter.rangeConvert(req.body.request.range);
             to = rangeConv.to;
@@ -182,7 +182,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         }
 
         try {
-            response = await getData.searchData(jsonData.request.index, query);
+            response = await getData.searchData(jsonData.request.source, query);
 
             // Convert Elasticsearch Response to Simpler JSON Format
             data = formatter.histogramFormatter(response);
