@@ -56,7 +56,7 @@ app.get("/search", async (req, res) => {
     }
 
     queryCache.search[addOn.getSHA1(req.body)] = data;
-    res.json(data);
+    res.json(query);
 });
 
 app.get("/search/sentiment", async (req, res) => {

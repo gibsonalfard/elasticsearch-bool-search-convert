@@ -112,7 +112,15 @@ const notConverter = (expr, queryField) =>{
             queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
         }else{
-            return {"must":[{"has_child":{"type": "sentiment","query": {"bool":{}}}}]}
+            // return {"must":[{"has_child":{"type": "sentiment","query": {"bool":{}}}}]}
+            queryValue = deMorganLaw(expr);
+            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
+            var query = simpleConverter(queryValue, queryField);
+
+            must_not = query.must_not;
+            query.must_not = [{"bool":{"must": must_not}}];
+
+            return query;
         }
     }
 
