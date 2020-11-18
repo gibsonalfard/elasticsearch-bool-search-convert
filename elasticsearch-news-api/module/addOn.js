@@ -43,7 +43,7 @@ exports.queryCondition = (jsonData) => {
             var queryValue = listQuery.value;
             var queryField = listQuery.field;
             var queryRange = listQuery.range;
-            var andMerge = (index > 0 && listQuery.and_merge) ? listQuery.and_merge : false;
+            var andMerge = (index > 0 && listQuery.andMerge) ? listQuery.andMerge : false;
     
             if(queryValue){
                 // Format queryValue
@@ -58,7 +58,9 @@ exports.queryCondition = (jsonData) => {
                     return queryTemp;
                 }
         
-                if(andMerge){
+                if(this.isEmpty(query.query.bool)){
+                    query = queryTemp;
+                }else if(andMerge){
                     query = converter.andMerge(query, queryTemp);
                 }else{
                     query = converter.mergeQuery(query, queryTemp);

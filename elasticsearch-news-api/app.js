@@ -234,9 +234,13 @@ const zeroHour = (date) => {
 
 const infiniteLoop = async () => {
     const sleep = 1000*60*5;
+    var date = new Date();
+    date.setHours(date.getHours() + 7);
+    var dateStr = date.toISOString();
+
     while (true){
-        console.log("Delete Cache");
-        console.log(JSON.stringify(queryCache));
+        console.log(dateStr,"Delete Cache");
+        console.log(dateStr,JSON.stringify(queryCache));
         queryCache = {
             "search": {},
             "histogram": {},

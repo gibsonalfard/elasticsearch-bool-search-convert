@@ -111,6 +111,8 @@ const notConverter = (expr, queryField) =>{
             queryValue = deMorganLaw(expr);
             queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
+        }else{
+            return {"must":[{"has_child":{"type": "sentiment","query": {"bool":{}}}}]}
         }
     }
 
@@ -122,8 +124,6 @@ const deMorganLaw = (expr) => {
 
     let result = ""
     str = expr;
-
-    console.log(str);
 
     if(pattern){
         for(item of pattern){
@@ -276,7 +276,7 @@ exports.convertQuery = (queryValue, queryField) => {
                 patternSize = pattern.length;
             }
 
-            if(queryValue.match(/NOT\s?\(+/)){
+            if(strQueryValue.match(/NOT\s?\(+/)){
                 query = notConverter(strQueryValue, queryField)
             }else{
                 query = moreComplexConverter(queryValue, queryField, pattern);
@@ -315,12 +315,10 @@ exports.andMerge = (query1, query2) => {
 
 exports.mergeQuery = (query1, query2) => {
     if(query2.query.bool.must){
-        for(item of query2.query.bool.must){
-            if(query1.query.bool.must){
-                query1.query.bool.must.push(item);
-            }else{
-                query1.query.bool.must = [item];
-            }
+        if(query1.query.bool.should){
+            query1.query.bool.should.push({"bool":{"must":query2.query.bool.must}});
+        }else{
+            query1.query.bool.should = [{"bool":{"must":query2.query.bool.must}}];
         }
     }
 
