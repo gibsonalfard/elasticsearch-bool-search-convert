@@ -33,7 +33,6 @@ app.get("/search", async (req, res) => {
     addOn.logAccess("[GET] /search", req.body, ip);
 
     if(queryCache.search[addOn.getSHA1(req.body)]){
-        console.log("Get From Cache");
         res.json(queryCache.search[addOn.getSHA1(req.body)]);
         return 0;
     }
@@ -88,7 +87,6 @@ app.get("/search/sentiment", async (req, res) => {
     var data = {};
 
     if(queryCache.sentiment[addOn.getSHA1(req.body)]){
-        console.log("Get From Cache");
         res.json(queryCache.sentiment[addOn.getSHA1(req.body)]);
         return 0;
     }
@@ -161,8 +159,10 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
+    toDate = zeroHour(toDate);
     var fromDate = new Date();
     fromDate.setDate(1);
+    fromDate = zeroHour(fromDate);
 
     var interval = "day"
     to = toDate.getTime();
@@ -175,12 +175,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     }
 
     addOn.logAccess(urlLog, req.body, ip);
-
-    if(queryCache.histogram[addOn.getSHA1(req.body)]){
-        console.log("Get From Cache");
-        res.json(queryCache.histogram[addOn.getSHA1(req.body)]);
-        return 0;
-    }
 
     try {
         if(req.body.request.source === undefined){
@@ -199,9 +193,16 @@ app.get("/search/sentiment/histogram", async (req, res) => {
             req.body.request.range = [from, to];
         }
 
+        req.body.interval = interval;
+        if(queryCache.histogram[addOn.getSHA1(req.body)]){
+            res.json(queryCache.histogram[addOn.getSHA1(req.body)]);
+            return 0;
+        }
+
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
+        
         if(query.error){
             console.log(query.error);
             res.json(query);
@@ -252,7 +253,15 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     res.json(data);
 });
 
-const infiniteLoop = async function(){
+const zeroHour = (date) => {
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return date;
+}
+
+const infiniteLoop = async () => {
     const sleep = 1000*60*5;
     while (true){
         console.log("Delete Cache");
@@ -268,5 +277,4 @@ const infiniteLoop = async function(){
 }
 
 infiniteLoop();
-
 app.listen(PORT, () => {});

@@ -1,6 +1,6 @@
 const converter = require("./converter");
 const formatter = require("./formatter");
-const crypto = require('crypto')
+const crypto = require('crypto');
 
 exports.getSHA1 = (input) => {
     return crypto.createHash('sha1').update(JSON.stringify(input)).digest('hex');
