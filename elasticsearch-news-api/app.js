@@ -18,12 +18,6 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/search", async (req, res) => {
-    if(req.body.request == undefined){
-        data = {"error": "Request Body Undefined"};
-        res.json(data);
-
-        return 0;
-    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -41,15 +35,11 @@ app.get("/search", async (req, res) => {
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
-
-        if(jsonData.request.source === undefined){
-            data = {"error": "Source of Data Not Defined"};
-            console.log("Source of Data Not Defined");
-            res.json(data);
-
+        
+        if(!addOn.isValidRequest(jsonData, res)){
             return 0;
         }
-        
+
         var query = addOn.queryCondition(jsonData)
         if(query.error){
             console.log(query.error);
@@ -70,12 +60,6 @@ app.get("/search", async (req, res) => {
 });
 
 app.get("/search/sentiment", async (req, res) => {
-    if(req.body.request == undefined){
-        data = {"error": "Request Body Undefined"};
-        res.json(data);
-
-        return 0;
-    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -94,11 +78,7 @@ app.get("/search/sentiment", async (req, res) => {
     try {
         jsonData = req.body;
 
-        if(jsonData.request.source === undefined){
-            data = {"error": "Source of Data Not Defined"};
-            console.log("Source of Data Not Defined");
-            res.json(data);
-
+        if(!addOn.isValidRequest(jsonData, res)){
             return 0;
         }
 
@@ -144,12 +124,6 @@ app.get("/search/sentiment", async (req, res) => {
 });
 
 app.get("/search/sentiment/histogram", async (req, res) => {
-    if(req.body.request == undefined){
-        data = {"error": "Request Body Undefined"};
-        res.json(data);
-
-        return 0;
-    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -158,16 +132,17 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 
     var data = {};
     var toDate = new Date();
+    var fromDate = new Date();
+    var interval = "day";
+    var urlLog = "[GET] /search/sentiment/histogram";
+
     toDate.setDate(30);
     toDate = zeroHour(toDate);
-    var fromDate = new Date();
     fromDate.setDate(1);
     fromDate = zeroHour(fromDate);
 
-    var interval = "day"
     to = toDate.getTime();
     from = fromDate.getTime();
-    var urlLog = "[GET] /search/sentiment/histogram";
 
     if(req.query.interval){
         interval = req.query.interval;
@@ -177,11 +152,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     addOn.logAccess(urlLog, req.body, ip);
 
     try {
-        if(req.body.request.source === undefined){
-            data = {"error": "Source of Data Not Defined"};
-            console.log("Source of Data Not Defined");
-            res.json(data);
-    
+        if(!addOn.isValidRequest(req.body, res)){
             return 0;
         }
 
@@ -202,12 +173,12 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
-        
         if(query.error){
             console.log(query.error);
             res.json(query);
             return 0;
         }
+
         query.aggs = {
             "sentiment_over_time":{
                 "date_histogram":{
@@ -271,7 +242,6 @@ const infiniteLoop = async () => {
             "histogram": {},
             "sentiment": {}
         };
-        console.log(JSON.stringify(queryCache));
         await new Promise(resolve => setTimeout(resolve, sleep));
     }
 }

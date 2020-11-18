@@ -6,6 +6,20 @@ exports.getSHA1 = (input) => {
     return crypto.createHash('sha1').update(JSON.stringify(input)).digest('hex');
 }
 
+exports.isValidRequest = (jsonData, res) => {
+    if(jsonData.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+        return false;
+    }else if(jsonData.request.source === undefined){
+        data = {"error": "Source of Data Not Defined"};
+        res.json(data);
+        return false
+    }
+
+    return true;
+}
+
 exports.isEmpty = (obj) => {
     if(obj != null){
         return Object.keys(obj).length === 0;
@@ -59,7 +73,24 @@ exports.queryCondition = (jsonData) => {
         }
     }
 
-    // Send Request to Elasticsearch
+    query = postConvertion(jsonData, query);
+
+    return query;
+}
+
+exports.logAccess = (endpoint, body, ip) => {
+    var date = new Date();
+    // Change Timezone to Asia/Jakarta (+7)
+    date.setHours(date.getHours() + 7);
+    var dateStr = date.toISOString();
+
+    console.log(dateStr,"IP-ADDRESS:",ip);
+    console.log(dateStr,"ENDPOINT",endpoint);
+    console.log(dateStr,"REQUEST-BODY",JSON.stringify(body));
+    console.log("");
+}
+
+const postConvertion = (jsonData, query) => {
     if(!this.isEmpty(jsonData.request.select)){
         query["_source"] = jsonData.request.select;
     }
@@ -93,16 +124,4 @@ const rangeInsert = (query, range) => {
     }
 
     return query;
-}
-
-exports.logAccess = (endpoint, body, ip) => {
-    var date = new Date();
-    // Change Timezone to Asia/Jakarta (+7)
-    date.setHours(date.getHours() + 7);
-    var dateStr = date.toISOString();
-
-    console.log(dateStr,"IP-ADDRESS:",ip);
-    console.log(dateStr,"ENDPOINT",endpoint);
-    console.log(dateStr,"REQUEST-BODY",JSON.stringify(body));
-    console.log("");
 }
