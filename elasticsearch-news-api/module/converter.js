@@ -1,3 +1,4 @@
+const { query } = require("express");
 const addOn = require("./addOn");
 
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
@@ -9,14 +10,26 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
             tmp = item.replace("$","");
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
-
+            
             var childQuery = simpleConverter(childValue, queryField);
+            if(childQuery.error){
+                return childQuery;
+            }
+
             childQuery = {
                 "bool": childQuery
             };
             parentOperant.push(childQuery);
+        }else if(item){
+            var childQuery = simpleConverter(item, queryField);
+            if(childQuery.error){
+                return childQuery;
+            }
+            parentOperant.push({
+                "bool": childQuery
+            });
         }else{
-            stringQuery = `{"term": {"${queryField}":"${item}"}}`
+            stringQuery = `{"term": {"${queryField}":"${item}"}}`;
             parentOperant.push(JSON.parse(stringQuery));         
         }
     }
@@ -25,7 +38,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
 }
 
 const simpleConverter = (queryValue, queryField) => {
-    boolOperant = {
+    var boolOperant = {
         "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
@@ -33,11 +46,10 @@ const simpleConverter = (queryValue, queryField) => {
     pattern = queryValue.match(regex);
 
     if(pattern){
-        operant = [];
+        var operant = [];
+        queryValue = queryValue.replace(/NOT \w+/gi, "");
         
         for (item of pattern){
-            // queryValue = queryValue.replace(item, `$${i}`);
-            // i+= 1;
             temp = item.replace("NOT ","");
             stringQuery = `{"term": {"${queryField}":"${temp}"}}`
             operant.push(JSON.parse(stringQuery));
@@ -54,33 +66,36 @@ const simpleConverter = (queryValue, queryField) => {
                 }
             }]
         }
-        
-    }else{
-        if(queryValue.includes("AND")){
-            list = queryValue.split(" AND ");
-            operant = [];
-    
-            for(item of list){
-                stringQuery = `{"term": {"${queryField}":"${item}"}}`
+
+    }
+
+    operator = queryValue.match(/( AND | OR )/gi);
+
+    if(operator){
+        if(!boolOperant.must_not){
+            boolOperant.must = undefined;
+        }
+
+        if(operator.includes(" AND ") && operator.includes(" OR ")){
+            return {"error": "Missing Parentheses in Query Value"}
+        }
+
+        list = queryValue.split(operator[0]);
+        var operant = [];
+
+        for(item of list){
+            if(item != " " && item != ""){
+                stringQuery = `{"term": {"${queryField}":"${item}"}}`;
                 operant.push(JSON.parse(stringQuery));
-            }
-    
-            boolOperant = {
-                "must": operant
             }
         }
-    
-        if(queryValue.includes("OR")){
-            list = queryValue.split(" OR ");
-            operant = [];
-    
-            for(item of list){
-                stringQuery = `{"term": {"${queryField}":"${item}"}}`
-                operant.push(JSON.parse(stringQuery));
-            }
-    
-            boolOperant = {
-                "should": operant
+
+        key = operator == " AND " ? "must" : "should";
+        if(!addOn.isEmpty(operant)){
+            if(key == "must" && boolOperant["must_not"]){
+                boolOperant[key].push(operant);
+            }else{
+                boolOperant[key] = operant;
             }
         }
     }
@@ -92,8 +107,9 @@ const notConverter = (expr, queryField) =>{
     pattern = expr.match(/( AND | OR )/gi);
 
     if(pattern){
-        if(pattern == " OR "){
+        if(pattern.includes(" OR ")){
             queryValue = deMorganLaw(expr);
+            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
         }
     }
@@ -127,7 +143,8 @@ const deMorganLaw = (expr) => {
             raw = "(NOT ".concat(item).concat(")");
             result = result.concat(raw).concat(" ");
             if(pattern[i]){
-                result = result.concat(pattern[i]).concat(" ");
+                negate = pattern[i] == "AND" ? "OR" : "AND";
+                result = result.concat(negate).concat(" ");
             }
             i += 1;
         }
@@ -162,6 +179,9 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
             var query = moreComplexConverter(childValue, queryField, pattern);
         }else{
             var query = simpleConverter(childValue, queryField);
+            if(query.error){
+                return query;
+            }
         }
     }
 
@@ -190,6 +210,22 @@ const convertAggregation = (aggs, index = 0) => {
     }
 
     return aggrQuery;
+}
+
+exports.numberRangeConvert = (rangeArr) => {
+    var from = rangeArr[0];
+    var to = rangeArr[1];
+    var range = {};
+    
+    if(from > 0 ){
+        range.gte = from;
+    }
+
+    if(to > 0){
+        range.lte = to;
+    }
+
+    return range
 }
 
 exports.rangeConvert = (rangeArr) => {
@@ -240,13 +276,18 @@ exports.convertQuery = (queryValue, queryField) => {
                 patternSize = pattern.length;
             }
 
-            if(queryValue.includes("NOT")){
+            if(queryValue.match(/NOT\s?\(+/)){
                 query = notConverter(strQueryValue, queryField)
             }else{
                 query = moreComplexConverter(queryValue, queryField, pattern);
+                
             }
         }else{
             query = simpleConverter(queryValue, queryField);
+        }
+
+        if(query.error){
+            return query;
         }
 
         result = {
@@ -260,6 +301,16 @@ exports.convertQuery = (queryValue, queryField) => {
     }
 
     return result;
+}
+
+exports.andMerge = (query1, query2) => {
+    if(query1.query.bool.must){
+        query1.query.bool.must.push(query2.query);
+    }else{
+        query1.query.bool.must = [query2.query];
+    }
+
+    return query1;
 }
 
 exports.mergeQuery = (query1, query2) => {

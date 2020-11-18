@@ -1,4 +1,16 @@
-const { isEmpty } = require("./addOn");
+const addOn = require("./addOn");
+
+exports.quoteFormatter = (text, list) => {
+    for(item of list){
+        replaceRaw = item.replace(/[\"\']/g, "");
+        replacement = replaceRaw.replace(/\s/g, " AND ");
+        replacement = `(${replacement})`;
+
+        text = text.replace(item,replacement);
+    }
+
+    return text;
+}
 
 exports.outputJSONFormatter = (elasticResponse) => {
     var jsonData = [];
@@ -8,7 +20,9 @@ exports.outputJSONFormatter = (elasticResponse) => {
     for(hit of elasticResponse.hits.hits){
         formatData = hit._source;
         formatData.score = hit._score;
-        formatData.sentiment = getSentimentById(hit._id, elasticResponse.aggregations);
+        if(elasticResponse.aggregations){
+            formatData.sentiment = getSentimentById(hit._id, elasticResponse.aggregations);
+        }
 
         jsonData.push(formatData);
     }
@@ -39,7 +53,7 @@ exports.histogramFormatter = (elasticResponse) => {
                 }
             }
             sentimentStr = sentimentStr.concat("}").replace(", }","}");
-            if(isEmpty(sentimentList) ? !emptySentimentList : emptySentimentList){
+            if(addOn.isEmpty(sentimentList) ? !emptySentimentList : emptySentimentList){
                 emptySentimentList = false;
             }
         }else{
@@ -95,8 +109,6 @@ const getSentimentById = (id, aggregation) => {
             break;
         }
     }
-
-    // console.log(sentimentRaw);
 
     var sentimentStr = "{";
     for(item of sentimentRaw["to-sentiment"]["by-sentiment"].buckets){

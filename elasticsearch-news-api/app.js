@@ -8,15 +8,22 @@ const { query } = require("express");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+var queryCache = {};
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res)=>{
-    res.json({ message: "Welcome to GibsonAlfard application." });
+    res.json({ message: "Welcome to Elastisearch Middleware." });
 });
 
 app.get("/search", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -25,25 +32,50 @@ app.get("/search", async (req, res) => {
 
     addOn.logAccess("[GET] /search", req.body, ip);
 
+    if(queryCache.search[addOn.getSHA1(req.body)]){
+        res.json(queryCache.search[addOn.getSHA1(req.body)]);
+        return 0;
+    }
+
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
+
+        if(jsonData.request.source === undefined){
+            data = {"error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
+            res.json(data);
+
+            return 0;
+        }
         
         var query = addOn.queryCondition(jsonData)
-        // responseData = await getData.searchData(jsonData.request.index, query);
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
+        responseData = await getData.searchData(jsonData.request.source, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
-        // data = formatter.outputJSONFormatter(responseData);
+        data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
-        console.log("Error - Outside");
-        data = {"Error": error.message}
+        console.log(error.message);
+        data = {"error": error.message}
     }
 
-    res.json(query);
+    queryCache.search[addOn.getSHA1(req.body)] = data;
+    res.json(data);
 });
 
 app.get("/search/sentiment", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -54,10 +86,28 @@ app.get("/search/sentiment", async (req, res) => {
 
     var data = {};
 
+    if(queryCache.sentiment[addOn.getSHA1(req.body)]){
+        res.json(queryCache.sentiment[addOn.getSHA1(req.body)]);
+        return 0;
+    }
+
     try {
         jsonData = req.body;
 
+        if(jsonData.request.source === undefined){
+            data = {"error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
+            res.json(data);
+
+            return 0;
+        }
+
         var query = addOn.queryCondition(jsonData)
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
         query.aggs = {
             "by-news-id":{
                 "terms":{
@@ -80,42 +130,61 @@ app.get("/search/sentiment", async (req, res) => {
             }
         }
 
-        responseData = await getData.searchData(jsonData.request.index, query);
+        responseData = await getData.searchData(jsonData.request.source, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
         console.log(error.message);
-        data = {"Error": error.message};
+        data = {"error": error.message};
     }
 
+    queryCache.sentiment[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
 app.get("/search/sentiment/histogram", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
-    addOn.logAccess("[GET] /search/sentiment/histogram", req.body, ip);
-
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
+    toDate = zeroHour(toDate);
     var fromDate = new Date();
     fromDate.setDate(1);
+    fromDate = zeroHour(fromDate);
 
     var interval = "day"
     to = toDate.getTime();
     from = fromDate.getTime();
+    var urlLog = "[GET] /search/sentiment/histogram";
 
     if(req.query.interval){
         interval = req.query.interval;
+        urlLog = `[GET] /search/sentiment/histogram?interval=${interval}`;
     }
 
+    addOn.logAccess(urlLog, req.body, ip);
+
     try {
+        if(req.body.request.source === undefined){
+            data = {"error": "Source of Data Not Defined"};
+            console.log("Source of Data Not Defined");
+            res.json(data);
+    
+            return 0;
+        }
+
         if(req.body.request.range){
             rangeConv = converter.rangeConvert(req.body.request.range);
             to = rangeConv.to;
@@ -124,15 +193,26 @@ app.get("/search/sentiment/histogram", async (req, res) => {
             req.body.request.range = [from, to];
         }
 
+        req.body.interval = interval;
+        if(queryCache.histogram[addOn.getSHA1(req.body)]){
+            res.json(queryCache.histogram[addOn.getSHA1(req.body)]);
+            return 0;
+        }
+
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
+        
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
         query.aggs = {
             "sentiment_over_time":{
                 "date_histogram":{
                     "field": "datetime_ms",
                     "calendar_interval": interval,
-                    "format": "yyyy-MM-dd:HH:mm:ss",
                     "time_zone": "+07:00",
                     "extended_bounds": {
                         "min": from,
@@ -155,16 +235,46 @@ app.get("/search/sentiment/histogram", async (req, res) => {
                 }
             }
         }
-        response = await getData.searchData(jsonData.request.index, query);
 
-        // Convert Elasticsearch Response to Simpler JSON Format
-        data = formatter.histogramFormatter(response);
+        try {
+            response = await getData.searchData(jsonData.request.source, query);
+
+            // Convert Elasticsearch Response to Simpler JSON Format
+            data = formatter.histogramFormatter(response);
+        } catch (error) {
+            data = {"error": "Invalid range for interval parameter"};
+        }
     } catch (error) {
-        console.log("Error - Outside");
-        data = {"Error": error.message};
+        console.log(error.message);
+        data = {"error": error.message};
     }
 
+    queryCache.histogram[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
+const zeroHour = (date) => {
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return date;
+}
+
+const infiniteLoop = async () => {
+    const sleep = 1000*60*5;
+    while (true){
+        console.log("Delete Cache");
+        console.log(JSON.stringify(queryCache));
+        queryCache = {
+            "search": {},
+            "histogram": {},
+            "sentiment": {}
+        };
+        console.log(JSON.stringify(queryCache));
+        await new Promise(resolve => setTimeout(resolve, sleep));
+    }
+}
+
+infiniteLoop();
 app.listen(PORT, () => {});
