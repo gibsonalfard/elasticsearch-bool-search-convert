@@ -77,7 +77,7 @@ const simpleConverter = (queryValue, queryField) => {
         }
 
         if(operator.includes(" AND ") && operator.includes(" OR ")){
-            return {"error": "Missing Parentheses"}
+            return {"error": "Missing Parentheses in Query Value"}
         }
 
         list = queryValue.split(operator[0]);
@@ -179,6 +179,9 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
             var query = moreComplexConverter(childValue, queryField, pattern);
         }else{
             var query = simpleConverter(childValue, queryField);
+            if(query.error){
+                return query;
+            }
         }
     }
 
@@ -277,13 +280,14 @@ exports.convertQuery = (queryValue, queryField) => {
                 query = notConverter(strQueryValue, queryField)
             }else{
                 query = moreComplexConverter(queryValue, queryField, pattern);
+                
             }
         }else{
             query = simpleConverter(queryValue, queryField);
+        }
 
-            if(query.error){
-                return query;
-            }
+        if(query.error){
+            return query;
         }
 
         result = {

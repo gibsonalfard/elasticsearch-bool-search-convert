@@ -39,12 +39,17 @@ app.get("/search", async (req, res) => {
         }
         
         var query = addOn.queryCondition(jsonData)
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
         responseData = await getData.searchData(jsonData.request.source, query);
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
-        console.log("Error - Outside");
+        console.log(error.message);
         data = {"Error": error.message}
     }
 
@@ -74,6 +79,11 @@ app.get("/search/sentiment", async (req, res) => {
         }
 
         var query = addOn.queryCondition(jsonData)
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
         query.aggs = {
             "by-news-id":{
                 "terms":{
@@ -153,6 +163,11 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
+        if(query.error){
+            console.log(query.error);
+            res.json(query);
+            return 0;
+        }
         query.aggs = {
             "sentiment_over_time":{
                 "date_histogram":{
@@ -190,7 +205,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
             data = {"Error": "Invalid range for interval parameter"};
         }
     } catch (error) {
-        console.log("Error - Outside");
+        console.log(error.message);
         data = {"Error": error.message};
     }
 
