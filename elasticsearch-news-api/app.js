@@ -8,6 +8,7 @@ const { query } = require("express");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+var queryCache = {};
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -17,6 +18,12 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/search", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -25,13 +32,19 @@ app.get("/search", async (req, res) => {
 
     addOn.logAccess("[GET] /search", req.body, ip);
 
+    if(queryCache.search[addOn.getSHA1(req.body)]){
+        console.log("Get From Cache");
+        res.json(queryCache.search[addOn.getSHA1(req.body)]);
+        return 0;
+    }
+
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
 
         if(jsonData.request.source === undefined){
-            data = {"Error": "Source of Data Not Defined"};
+            data = {"error": "Source of Data Not Defined"};
             console.log("Source of Data Not Defined");
             res.json(data);
 
@@ -50,13 +63,20 @@ app.get("/search", async (req, res) => {
         data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
         console.log(error.message);
-        data = {"Error": error.message}
+        data = {"error": error.message}
     }
 
+    queryCache.search[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
 app.get("/search/sentiment", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -67,11 +87,17 @@ app.get("/search/sentiment", async (req, res) => {
 
     var data = {};
 
+    if(queryCache.sentiment[addOn.getSHA1(req.body)]){
+        console.log("Get From Cache");
+        res.json(queryCache.sentiment[addOn.getSHA1(req.body)]);
+        return 0;
+    }
+
     try {
         jsonData = req.body;
 
         if(jsonData.request.source === undefined){
-            data = {"Error": "Source of Data Not Defined"};
+            data = {"error": "Source of Data Not Defined"};
             console.log("Source of Data Not Defined");
             res.json(data);
 
@@ -112,13 +138,20 @@ app.get("/search/sentiment", async (req, res) => {
         data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
         console.log(error.message);
-        data = {"Error": error.message};
+        data = {"error": error.message};
     }
 
+    queryCache.sentiment[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
 app.get("/search/sentiment/histogram", async (req, res) => {
+    if(req.body.request == undefined){
+        data = {"error": "Request Body Undefined"};
+        res.json(data);
+
+        return 0;
+    }
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
@@ -143,9 +176,15 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 
     addOn.logAccess(urlLog, req.body, ip);
 
+    if(queryCache.histogram[addOn.getSHA1(req.body)]){
+        console.log("Get From Cache");
+        res.json(queryCache.histogram[addOn.getSHA1(req.body)]);
+        return 0;
+    }
+
     try {
         if(req.body.request.source === undefined){
-            data = {"Error": "Source of Data Not Defined"};
+            data = {"error": "Source of Data Not Defined"};
             console.log("Source of Data Not Defined");
             res.json(data);
     
@@ -202,14 +241,32 @@ app.get("/search/sentiment/histogram", async (req, res) => {
             // Convert Elasticsearch Response to Simpler JSON Format
             data = formatter.histogramFormatter(response);
         } catch (error) {
-            data = {"Error": "Invalid range for interval parameter"};
+            data = {"error": "Invalid range for interval parameter"};
         }
     } catch (error) {
         console.log(error.message);
-        data = {"Error": error.message};
+        data = {"error": error.message};
     }
 
+    queryCache.histogram[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
+
+const infiniteLoop = async function(){
+    const sleep = 1000*60*5;
+    while (true){
+        console.log("Delete Cache");
+        console.log(JSON.stringify(queryCache));
+        queryCache = {
+            "search": {},
+            "histogram": {},
+            "sentiment": {}
+        };
+        console.log(JSON.stringify(queryCache));
+        await new Promise(resolve => setTimeout(resolve, sleep));
+    }
+}
+
+infiniteLoop();
 
 app.listen(PORT, () => {});
