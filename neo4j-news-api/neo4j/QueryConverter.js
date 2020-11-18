@@ -1,94 +1,91 @@
 
-const QueryFilter = require('./QueryFilter');
-
-const FULLTEXT_INDEX_NAME = "newsTitleAndContent";
+const Cypher = require('./Cypher');
 
 class QueryConverter {
     constructor(params) {
         this.params = params;
-        this.queryFilter = new QueryFilter;
+        this.cypher = new Cypher;
+        this.searchQuery = ``;
+        this.whereQuery = ``;
     }
 
-    isQueryExist(query) {
-        return query.field && query.value;
-    }
-
-    isFilterExist(query) {
-        return query.filter && true;
-    }
-
-    searchByKeyword(query) {
-        const keyword = query.field + ":" + query.value;
-        const nodeName = "node";
-        return `CALL db.index.fulltext.queryNodes("${FULLTEXT_INDEX_NAME}", "${keyword}") YIELD ${nodeName} as news`;
-    }
-
-    getNewsById(query) {
-        const cypherQuery = query;
-        // TBA ...
-        return cypherQuery;
-    }
-
-    queryRouter(query) {
-        if(!this.isQueryExist(query)) {
-            return "";
-        }
-
-        if(query.field == "content" || query.field == "title") {
-            return this.searchByKeyword(query);
-        } else if(query.field == "id") {
-            return this.getNewsById(query);
-        } else {
-            console.log(`[ERROR] Can not search from field: ${query.field}`)
-            return "";
+    getMatchQuery(matchCode) {
+        switch(matchCode) {
+            case 1:
+                return this.cypher.matchNewsProperties();
+            case 2:
+                return this.cypher.matchNewsSentiment();
+            case 3:
+                return this.cypher.matchNewsSentimentClient();
+            default:
+                return this.cypher.matchNewsProperties();
         }
     }
 
-    filterRouter(query) {
-        if(!this.isFilterExist(query)) {
-            return this.queryFilter.returnEverything();
+    getReturnQuery(returnCode) {
+        switch(returnCode) {
+            case 1:
+                return this.cypher.returnEverything();
+            case 2:
+                return this.cypher.returnHistogram();
+            default:
+                return this.cypher.returnEverything();
         }
+    }
 
-        let filterQuery = ``;
-        let filters = [];
-
-        // Match
-        filterQuery = filterQuery.concat(this.queryFilter.matchNews(), " ");
-        // filterQuery = filterQuery.concat(this.queryFilter.matchNewsSentiment(), " ");
-        // filterQuery = filterQuery.concat(this.queryFilter.matchNewsSentimentClient(), " ");
-        filterQuery = filterQuery.concat("WHERE", " ");
-
-        // Filter
-        for (const filterKey in query.filter) {
-            if(filterKey == "date") {
-                filters.push(this.queryFilter.filterDate(query.filter[filterKey]));                
-            } else if(filterKey == "sentiment") {
-                filters.push(this.queryFilter.filterSentiment(query.filter[filterKey]));                
-            }
-        }
-
-        for(let i = 0; i < filters.length; i++) {
-            if(i+1 >= filters.length) {
-                filterQuery = filterQuery.concat(filters[i], " ");
+    setQueryArray(queries) {
+        let doSearch = false; 
+        let keywords = ``;
+        for(let i = 0; i < queries.length; i++) {
+            if(queries[i].field == "content" || queries[i].field == "title") {                    
+                doSearch = true;
+                if(keywords == ``) {
+                    keywords = this.cypher.getSearchKeyword(queries[i]);
+                } else {
+                    keywords = keywords.concat(this.cypher.and(), this.cypher.getSearchKeyword(queries[i]));
+                }
             } else {
-                filterQuery = filterQuery.concat(filters[i], " AND ");
+                if(this.whereQuery == ``) {
+                    this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereCondition(queries[i]));
+                } else {
+                    this.whereQuery = this.whereQuery.concat(this.cypher.and(), this.cypher.whereCondition(queries[i]));
+                }
             }
         }
-
-        // Return
-        filterQuery = filterQuery.concat(this.queryFilter.returnEverything(), " ");
-
-        // console.log(`filterQuery: ${filterQuery}`);
-        return filterQuery;
+        if(doSearch) {                
+            this.searchQuery = this.cypher.searchByKeyword(keywords);
+        } else {
+            this.searchQuery = this.cypher.matchNews();
+        }
     }
 
-    toCypher(query) {
-        const cypherQuery = this.queryRouter(query);
-        if(cypherQuery != ""){            
-            return cypherQuery + " " + this.filterRouter(query);
+    setQuery(query) {
+        if(query instanceof Array) {
+            this.setQueryArray(query);
         } else {
-            return "";
+            if(query.field == "content" || query.field == "title") {
+                this.searchQuery = this.cypher.searchByKeyword(this.cypher.getSearchKeyword(query));
+            } else {
+                if(this.whereQuery == ``) {
+                    this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereCondition(query));
+                }
+            }
         }
+    }
+
+    toCypher(query, matchCode, returnCode) {
+        let cypherQuery = ``;
+
+        this.searchQuery = ``;
+        this.whereQuery = ``;
+
+        this.setQuery(query);
+
+        cypherQuery = cypherQuery.concat(this.searchQuery, " ");
+        cypherQuery = cypherQuery.concat(this.getMatchQuery(matchCode), " ");
+        cypherQuery = cypherQuery.concat(this.whereQuery, " ");
+        cypherQuery = cypherQuery.concat(this.getReturnQuery(returnCode), " ");
+        return cypherQuery;
     }
 
 }

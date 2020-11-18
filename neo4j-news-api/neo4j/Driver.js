@@ -1,5 +1,6 @@
 const QueryConverter = require('./QueryConverter');
 const RequestParser = require('./RequestParser');
+const DataFormatter = require('./DataFormatter');
 const neo4jDriver = require('./config');
 
 class Driver {
@@ -7,19 +8,21 @@ class Driver {
         this.params = params;
         this.queryConverter = new QueryConverter();
         this.requestParser = new RequestParser();
+        this.dataFormatter = new DataFormatter();
     }
 
-    async search(request) {
+    async search(request, matchCode, returnCode) {
         const query = this.requestParser.toQuery(request);
-        const cypherQuery = this.queryConverter.toCypher(query);
-        // console.log(`\n\ncypherQuery: ${cypherQuery}`);
+        const cypherQuery = this.queryConverter.toCypher(query, matchCode, returnCode);
+        console.log(`\n\n${cypherQuery}`);
         // return cypherQuery;
         const result = await this.executeQuery(cypherQuery);
-        return result;
+        const formattedData = this.dataFormatter.formatData(result);
+        return formattedData;
     }
 
     async executeQuery(cypherQuery) {
-        const session = neo4jDriver.session();
+        const session = neo4jDriver.session({database: 'neo4j'});
         let result;
 
         try {

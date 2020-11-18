@@ -1,11 +1,26 @@
 
-class QueryFilter {
+const FULLTEXT_INDEX_NAME = "newsTitleAndContent";
+
+class Cypher {
     constructor(params) {
         this.params = params;
     }
 
+    getSearchKeyword(query) {
+        return "(" + query.field + ":" + query.value + ")";
+    }
+
+    searchByKeyword(keyword) {
+        const nodeName = "node";
+        return `CALL db.index.fulltext.queryNodes("${FULLTEXT_INDEX_NAME}", "${keyword}") YIELD ${nodeName} as news`;
+    }
+
     matchNews() {
-        return `MATCH (news)-[:HAS_META]-(meta:Meta),
+        return `MATCH (news:News)`;
+    }
+
+    matchNewsProperties() {
+        return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
                         (meta)-[:HAS_SOURCE]-(source:Source),
                     (news)-[:HAS_ANALYSIS]-(analysis:Analysis),
@@ -21,7 +36,7 @@ class QueryFilter {
     }
 
     matchNewsSentiment() {
-        return `MATCH (news)-[:HAS_META]-(meta:Meta),
+        return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
                         (meta)-[:HAS_SOURCE]-(source:Source),
                     (news)-[:HAS_ANALYSIS]-(analysis:Analysis),
@@ -39,7 +54,7 @@ class QueryFilter {
     }
 
     matchNewsSentimentClient() {
-        return `MATCH (news)-[:HAS_META]-(meta:Meta),
+        return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
                         (meta)-[:HAS_SOURCE]-(source:Source),
                     (news)-[:HAS_ANALYSIS]-(analysis:Analysis),
@@ -57,32 +72,65 @@ class QueryFilter {
                         (location)-[:HAS_CITY]-(city:City)`;        
     }
 
-    filterDate(date) {
-        if(date instanceof String){
-            return `date(datetime({epochMillis:news.datetime_ms})) = date("${date}")`
-        } else if(date instanceof Object) {
-            try {
-                return `date(datetime({epochMillis:news.datetime_ms})) >= date("${date.start}") 
-                        AND date(datetime({epochMillis:news.datetime_ms})) >= date("${date.end}")`
-            } catch (err) {
-                console.log(`[ERROR] Invalid date format!`);
-                return ``;
-            }
+    and() {
+        return ` AND `;
+    }
+
+    or() {
+        return ` OR `;
+    }
+
+    where() {
+        return `\nWHERE `;
+    }
+
+    whereConditionByType(field, value) {
+        if(typeof value == "string") {
+            return `${field} = "${value}"`;
+        } else {
+            return `${field} = ${value}`;
         }
     }
 
-    filterSentiment(sentiment) {
-        return `sentiment.sentiment = "${sentiment}"`;
+    whereCondition(query) {
+        try {
+            const dotCount = query.field.split(".").length - 1;
+
+            // analysis
+            if(query.field.includes(`analysis.`) && dotCount >= 2) {
+                query.field = query.field.replace("analysis.", "");
+                return this.whereConditionByType(query.field, query.value)
+            } else if(query.field.includes(`analysis.`)) {
+                return this.whereConditionByType(query.field, query.value)
+            }
+
+            // meta
+            if(query.field.includes(`meta.`) && dotCount >= 2) {
+                query.field = query.field.replace("meta.", "");
+                return this.whereConditionByType(query.field, query.value)
+            } else if(query.field.includes(`meta.`)) {
+                return this.whereConditionByType(query.field, query.value)
+            }
+                
+            // location_id
+            if(query.field.includes(`location_id.`)) {
+                return this.whereConditionByType(query.field, query.value)
+            }
+
+            return this.whereConditionByType(`news.${query.field}`, query.value)
+        } catch (err) {
+            return ``;
+        }
     }
 
     returnEverything() { 
-        return `RETURN *`;
+        return `\nRETURN *`;
     }
 
-    returnId(nodeName) {
-        return `RETURN ${nodeName}.id as news_id`
+    returnHistogram() { 
+        return `\nRETURN date(datetime({epochMillis:news.datetime_ms})) as date, sentiment.sentiment as sentiment, COUNT(*) as count`;
     }
 
 }
 
-module.exports = QueryFilter;
+module.exports = Cypher;
