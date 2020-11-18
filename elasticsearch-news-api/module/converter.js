@@ -26,7 +26,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
 
 const simpleConverter = (queryValue, queryField) => {
     boolOperant = {
-        "must": JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)
+        "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
     regex = /NOT \w+/gi
@@ -45,14 +45,14 @@ const simpleConverter = (queryValue, queryField) => {
 
         boolOperant = {
             "must_not":  operant,
-            "must":{
+            "must":[{
                 "has_child":{
                     "type": "sentiment",
                     "query": {
                         "bool":{}
                     }
                 }
-            }
+            }]
         }
         
     }else{
@@ -199,10 +199,8 @@ exports.rangeConvert = (rangeArr) => {
     var currentMs = d.getTime();
     
     if(from == "now"){
-        console.log("Masuk");
         to = from = currentMs;
-    }else if(to){
-        
+    }else if(to == "now"){
         to = currentMs;
     }
     
@@ -214,7 +212,7 @@ exports.rangeConvert = (rangeArr) => {
     return range;
 }
 
-exports.convertQuery = (queryValue, queryField, aggrField) => {
+exports.convertQuery = (queryValue, queryField) => {
     var result = {};
     try {
         strQueryValue = queryValue;
@@ -256,16 +254,44 @@ exports.convertQuery = (queryValue, queryField, aggrField) => {
                 "bool": query
             }
         }
-
-        // if(aggrField){
-        //     aggregation = convertAggregation(aggrField);
-        //     if(!addOn.isEmpty(aggregation)){
-        //         result.aggs = aggregation;
-        //     }
-        // }
+        
     } catch (error) {
         console.log(error.message);
     }
 
     return result;
+}
+
+exports.mergeQuery = (query1, query2) => {
+    if(query2.query.bool.must){
+        for(item of query2.query.bool.must){
+            if(query1.query.bool.must){
+                query1.query.bool.must.push(item);
+            }else{
+                query1.query.bool.must = [item];
+            }
+        }
+    }
+
+    if(query2.query.bool.should){
+        for(item of query2.query.bool.should){
+            if(query1.query.bool.should){
+                query1.query.bool.should.push(item);
+            }else{
+                query1.query.bool.should = [item];
+            }
+        }
+    }
+
+    if(query2.query.bool["must_not"]){
+        for(item of query2.query.bool["must_not"]){
+            if(query1.query.bool["must_not"]){
+                query1.query.bool["must_not"].push(item);
+            }else{
+                query1.query.bool["must_not"] = [item];
+            }
+        }
+    }
+
+    return query1;
 }

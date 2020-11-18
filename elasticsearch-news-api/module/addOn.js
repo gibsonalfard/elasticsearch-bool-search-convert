@@ -1,17 +1,30 @@
 const converter = require("./converter");
 
 exports.isEmpty = (obj) => {
-    return Object.keys(obj).length === 0;
+    if(obj != null){
+        return Object.keys(obj).length === 0;
+    }else{
+        return true;
+    }
 }
 
 exports.queryCondition = (jsonData) => {
     // jsonData = req.body;
-    var queryValue = jsonData.request.query.value;
-    var queryField = jsonData.request.query.field;
-    var aggrField = jsonData.request.aggs;
+    var baseQuery = jsonData.request.query;
+    var query = {
+        "query":{
+            "bool":{}
+        }
+    };
 
-    //  Convert input query into bool search query for Elasticsearch
-    var query = converter.convertQuery(queryValue, queryField, aggrField);
+    for(listQuery of baseQuery){
+        var queryValue = listQuery.value;
+        var queryField = listQuery.field;
+
+        //  Convert input query into bool search query for Elasticsearch
+        var queryTemp = converter.convertQuery(queryValue, queryField);
+        query = converter.mergeQuery(query, queryTemp);
+    }
 
     // Send Request to Elasticsearch
     if(!this.isEmpty(jsonData.request.source)){
@@ -28,7 +41,6 @@ exports.queryCondition = (jsonData) => {
                 }
             }
         }
-
         if(query.query.bool.must){
             query.query.bool.must.push(range);
         }else{
@@ -37,4 +49,15 @@ exports.queryCondition = (jsonData) => {
     }
 
     return query;
+}
+
+exports.logAccess = (endpoint, body, ip) => {
+    var date = new Date();
+    date.setHours(date.getHours() + 7);
+    var dateStr = date.toISOString();
+
+    console.log(dateStr,"IP-ADDRESS:",ip);
+    console.log(dateStr,"ENDPOINT",endpoint);
+    console.log(dateStr,"REQUEST-BODY",JSON.stringify(body));
+    console.log("");
 }

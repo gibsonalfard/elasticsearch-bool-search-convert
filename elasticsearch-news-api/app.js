@@ -1,5 +1,6 @@
 const getData = require("./elasticsearch/get");
 const addOn = require("./module/addOn");
+const formatter = require("./module/formatter");
 const converter = require("./module/converter");
 const bodyParser = require("body-parser");
 const express = require("express");
@@ -16,22 +17,41 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/search", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search", req.body, ip);
+
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
-        data = await getData.searchData(jsonData.request.index, query);
+        // responseData = await getData.searchData(jsonData.request.index, query);
+
+        // Convert Elasticsearch Response to Simpler JSON Format
+        // data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
         console.log("Error - Outside");
-        res.json({"Error": error.message});
+        data = {"Error": error.message}
     }
 
-    res.json(data);
+    res.json(query);
 });
 
 app.get("/search/sentiment", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search/sentiment", req.body, ip);
+
     var data = {};
 
     try {
@@ -60,16 +80,27 @@ app.get("/search/sentiment", async (req, res) => {
             }
         }
 
-        data = await getData.searchData(jsonData.request.index, query);
+        responseData = await getData.searchData(jsonData.request.index, query);
+
+        // Convert Elasticsearch Response to Simpler JSON Format
+        data = formatter.outputJSONFormatter(responseData);
     } catch (error) {
         console.log(error.message);
-        res.json({"Error": error.message});
+        data = {"Error": error.message};
     }
 
     res.json(data);
 });
 
 app.get("/search/sentiment/histogram", async (req, res) => {
+    // Logging Variable
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[GET] /search/sentiment/histogram", req.body, ip);
+
     var data = {};
     var toDate = new Date();
     toDate.setDate(30);
@@ -85,13 +116,15 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     }
 
     try {
-        jsonData = req.body;
-
         if(req.body.request.range){
             rangeConv = converter.rangeConvert(req.body.request.range);
             to = rangeConv.to;
             from = rangeConv.from;
+        }else{
+            req.body.request.range = [from, to];
         }
+
+        jsonData = req.body;
         
         var query = addOn.queryCondition(jsonData)
         query.aggs = {
@@ -101,7 +134,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
                     "calendar_interval": interval,
                     "format": "yyyy-MM-dd:HH:mm:ss",
                     "time_zone": "+07:00",
-                    "keyed": true,
                     "extended_bounds": {
                         "min": from,
                         "max": to
@@ -123,15 +155,16 @@ app.get("/search/sentiment/histogram", async (req, res) => {
                 }
             }
         }
-        data = await getData.searchData(jsonData.request.index, query);
+        response = await getData.searchData(jsonData.request.index, query);
+
+        // Convert Elasticsearch Response to Simpler JSON Format
+        data = formatter.histogramFormatter(response);
     } catch (error) {
         console.log("Error - Outside");
-        res.json({"Error": error.message});
+        data = {"Error": error.message};
     }
 
     res.json(data);
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}.`);
-});
+app.listen(PORT, () => {});
