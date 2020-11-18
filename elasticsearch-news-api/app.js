@@ -123,6 +123,16 @@ app.get("/search/sentiment", async (req, res) => {
     res.json(data);
 });
 
+app.post("/news/insert", (req, res) => {
+    var requestBody = req.body.request;
+    var data = requestBody.data;
+    var index = requestBody.source;
+
+    var body = data.flatMap(doc => [{ index: { _index: index } }, doc]);
+    res.json(body);
+
+});
+
 app.get("/search/sentiment/histogram", async (req, res) => {
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
