@@ -20,6 +20,7 @@ app.get("/search", async (req, res) => {
         data = await driver.search(jsonData, matchCode, returnCode);
     } catch (err) {
         console.log(err);
+        res.json(err);;
     }
 
     res.json(data);
@@ -34,6 +35,7 @@ app.get("/search/sentiment", async (req, res) => {
         data = await driver.search(jsonData, matchCode, returnCode);
     } catch (err) {
         console.log(err);
+        res.json(err);;
     }
 
     res.json(data);
@@ -48,6 +50,7 @@ app.get("/search/sentiment_client", async (req, res) => {
         data = await driver.search(jsonData, matchCode, returnCode);
     } catch (err) {
         console.log(err);
+        res.json(err);;
     }
 
     res.json(data);
@@ -62,6 +65,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         data = await driver.search(jsonData, matchCode, returnCode);
     } catch (err) {
         console.log(err);
+        res.json(err);;
     }
 
     res.json(data);

@@ -46,6 +46,7 @@ class Cypher {
                         (analysis)-[:HAS_VERSIONS]-(versions:Versions),
                         (analysis)-[:HAS_SENTIMENT]-(sentiment:Sentiment),
                             (sentiment)-[:HAS_FEATURE]-(feature:Feature),
+                            (sentiment)-[:SENTIMENT_FOR_CLIENT]-(client:Client),
                     (news)-[:HAS_LOCATION_ID]-(location_id:LocationId),
                     (news)-[:HAS_LOCATION]-(location:Location),
                         (location)-[:HAS_PROVINCE]-(province:Province),
@@ -92,6 +93,16 @@ class Cypher {
         }
     }
 
+    whereConditionDateRange(dateRange) {
+        try {
+            return `news.datetime_ms >= ${dateRange[0]} 
+                    AND news.datetime_ms <= ${dateRange[1]}`
+        } catch(err) {
+            console.log(`Invalid request.range format!`);
+            return ``;
+        }
+    }
+
     whereCondition(query) {
         try {
             const dotCount = query.field.split(".").length - 1;
@@ -117,10 +128,71 @@ class Cypher {
                 return this.whereConditionByType(query.field, query.value)
             }
 
+            // client
+            if(query.field.includes(`client.`)) {
+                return this.whereConditionByType(query.field, query.value)
+            }
+
             return this.whereConditionByType(`news.${query.field}`, query.value)
         } catch (err) {
             return ``;
         }
+    }
+
+    convertField(field) {
+        const dotCount = field.split(".").length - 1;
+
+        // analysis
+        if(field.includes(`analysis.`) && dotCount >= 2) {
+            field = field.replace("analysis.", "");
+            return field;
+        } else if(field.includes(`analysis.`)) {
+            return field;
+        }
+
+        // meta
+        if(field.includes(`meta.`) && dotCount >= 2) {
+            field = field.replace("meta.", "");
+            return field;
+        } else if(field.includes(`meta.`)) {
+            return field;
+        }
+            
+        // location_id
+        if(field.includes(`location_id.`)) {
+            return field;
+        }
+
+        // client
+        if(field.includes(`client.`)) {
+            return field;
+        }
+
+        field = `news.${field}`;
+        return field;
+    }
+
+    return() {
+        return `\nRETURN `;
+    }
+
+    comma() {
+        return ", ";
+    }
+
+    returnSelect(fields) { 
+        let returnQuery = ``;
+        for(let i = 0; i < fields.length; i++) {
+            if(returnQuery == ``) {
+                returnQuery = returnQuery.concat(this.return(), this.convertField(fields[i]));
+            } else {
+                returnQuery = returnQuery.concat(this.comma(), this.convertField(fields[i]));
+            }
+        }
+        if(returnQuery == ``) {
+            returnQuery = this.returnEverything();
+        }
+        return returnQuery;
     }
 
     returnEverything() { 
@@ -128,7 +200,7 @@ class Cypher {
     }
 
     returnHistogram() { 
-        return `\nRETURN date(datetime({epochMillis:news.datetime_ms})) as date, sentiment.sentiment as sentiment, COUNT(*) as count`;
+        return `\nRETURN date(datetime({epochMillis:news.datetime_ms})) as date, sentiment.sentiment as sentiment, COUNT(*) as count ORDER BY date ASC`;
     }
 
 }
