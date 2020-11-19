@@ -54,6 +54,7 @@ exports.queryCondition = (jsonData) => {
                 }
 
                 // Convert input query into bool search query for Elasticsearch
+                console.log(queryValue);
                 var queryTemp = converter.convertQuery(queryValue, queryField);
                 if (queryTemp.error) {
                     return queryTemp;
@@ -112,7 +113,6 @@ const postConvertion = (jsonData, query) => {
     }
 
     // Add Parent-Child Relation to return only news data
-    console.log(JSON.stringify(query));
     parentQuery = {
         "exists": {
             "field": "analysis.sentiment"

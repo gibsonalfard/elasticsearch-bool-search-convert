@@ -64,10 +64,6 @@ const simpleConverter = (queryValue, queryField) => {
     operator = queryValue.match(/( AND | OR )/gi);
 
     if(operator){
-        if(!boolOperant.must_not){
-            boolOperant.must = undefined;
-        }
-
         if(operator.includes(" AND ") && operator.includes(" OR ")){
             return {"error": "Missing Parentheses in Query Value"}
         }
@@ -84,10 +80,15 @@ const simpleConverter = (queryValue, queryField) => {
 
         key = operator == " AND " ? "must" : "should";
         if(!addOn.isEmpty(operant)){
-            if(key == "must" && boolOperant["must_not"]){
+            if(boolOperant[key]){
                 boolOperant[key].push(operant);
             }else{
                 boolOperant[key] = operant;
+            }
+
+            if(key == "should" && boolOperant["must_not"]){
+                boolOperant.should.push({"bool": {"must_not": boolOperant["must_not"]}});
+                boolOperant["must_not"] = undefined;
             }
         }
     }
