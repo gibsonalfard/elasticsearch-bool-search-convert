@@ -1,4 +1,6 @@
 const getData = require("./elasticsearch/get");
+const insertData = require("./elasticsearch/insert");
+
 const addOn = require("./module/addOn");
 const formatter = require("./module/formatter");
 const converter = require("./module/converter");
@@ -10,8 +12,8 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 var queryCache = {};
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({limit:1024*1024*20, type:'application/json'}));
+app.use(bodyParser.urlencoded({ extended:true,limit:1024*1024*20,type:'application/x-www-form-urlencoded' }));
 
 app.get("/", (req, res)=>{
     res.json({ message: "Welcome to Elastisearch Middleware." });
@@ -123,16 +125,6 @@ app.get("/search/sentiment", async (req, res) => {
     res.json(data);
 });
 
-app.post("/news/insert", (req, res) => {
-    var requestBody = req.body.request;
-    var data = requestBody.data;
-    var index = requestBody.source;
-
-    var body = data.flatMap(doc => [{ index: { _index: index } }, doc]);
-    res.json(body);
-
-});
-
 app.get("/search/sentiment/histogram", async (req, res) => {
     // Logging Variable
     var ip = req.headers['x-forwarded-for'] || 
@@ -232,6 +224,32 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 
     queryCache.histogram[addOn.getSHA1(req.body)] = data;
     res.json(data);
+});
+
+app.post("/news/add", async (req, res) => {
+    var requestBody = req.body.request;
+    var data = requestBody.data;
+    var index = requestBody.source;
+
+    // Format Data 
+    var body = insertData.bulkDataNews(index, data);
+    // Do bulk Insert
+    var response = await insertData.bulkInsert(body);
+
+    res.json(response);
+});
+
+app.post("/sentiment/add", async (req, res) => {
+    var requestBody = req.body.request;
+    var data = requestBody.data;
+    var index = requestBody.source;
+
+    // Format Data 
+    var body = insertData.bulkDataSentiment(index, data);
+    // Do bulk Insert
+    var response = await insertData.bulkInsert(body);
+
+    res.json(response);
 });
 
 const zeroHour = (date) => {
