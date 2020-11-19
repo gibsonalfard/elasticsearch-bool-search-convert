@@ -56,15 +56,7 @@ const simpleConverter = (queryValue, queryField) => {
         }
 
         boolOperant = {
-            "must_not":  operant,
-            "must":[{
-                "has_child":{
-                    "type": "sentiment",
-                    "query": {
-                        "bool":{}
-                    }
-                }
-            }]
+            "must_not":  operant
         }
 
     }
