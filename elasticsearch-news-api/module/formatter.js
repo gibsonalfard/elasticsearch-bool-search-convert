@@ -110,11 +110,15 @@ const getSentimentById = (id, aggregation) => {
         }
     }
 
-    var sentimentStr = "{";
-    for(item of sentimentRaw["to-sentiment"]["by-sentiment"].buckets){
-        sentimentStr = sentimentStr.concat(`"${item.key}": ${item.doc_count}, `);
+    if(sentimentRaw["to-sentiment"]){
+        var sentimentStr = "{";
+        for(item of sentimentRaw["to-sentiment"]["by-sentiment"].buckets){
+            sentimentStr = sentimentStr.concat(`"${item.key}": ${item.doc_count}, `);
+        }
+        sentimentStr = sentimentStr.concat("}").replace(", }","}");
+    }else{
+        return sentimentRaw;
     }
-    sentimentStr = sentimentStr.concat("}").replace(", }","}");
 
     return JSON.parse(sentimentStr);
 }

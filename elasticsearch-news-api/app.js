@@ -77,7 +77,7 @@ app.get("/search/sentiment", async (req, res) => {
         return 0;
     }
 
-    try {
+    // try {
         jsonData = req.body;
 
         if(!addOn.isValidRequest(jsonData, res)){
@@ -116,12 +116,12 @@ app.get("/search/sentiment", async (req, res) => {
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
-    } catch (error) {
-        console.log(error.message);
-        data = {"error": error.message};
-    }
+    // } catch (error) {
+    //     console.log(error.message);
+    //     data = {"error": error.message};
+    // }
 
-    queryCache.sentiment[addOn.getSHA1(req.body)] = data;
+    // queryCache.sentiment[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
@@ -135,7 +135,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     var data = {};
     var toDate = new Date();
     var fromDate = new Date();
-    var interval = "day";
+    var interval = "week";
     var urlLog = "[GET] /search/sentiment/histogram";
 
     toDate.setDate(30);
@@ -227,6 +227,13 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 });
 
 app.post("/news/add", async (req, res) => {
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[POST] /news/add/", req.body.request.source, ip);
+
     var requestBody = req.body.request;
     var data = requestBody.data;
     var index = requestBody.source;
@@ -240,6 +247,13 @@ app.post("/news/add", async (req, res) => {
 });
 
 app.post("/sentiment/add", async (req, res) => {
+    var ip = req.headers['x-forwarded-for'] || 
+     req.connection.remoteAddress || 
+     req.socket.remoteAddress ||
+     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    addOn.logAccess("[POST] /sentiment/add/", req.body.request.source, ip);
+
     var requestBody = req.body.request;
     var data = requestBody.data;
     var index = requestBody.source;
