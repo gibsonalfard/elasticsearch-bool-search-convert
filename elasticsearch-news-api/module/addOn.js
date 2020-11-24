@@ -94,12 +94,28 @@ exports.logAccess = (endpoint, body, ip) => {
     console.log("");
 }
 
+const convertInputRange = (range) => {
+    var dateRange = [];
+
+    var dateArr = range.split(" - ");
+    for(item of dateArr){
+        var itemArr = item.split("/");
+        var date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
+        dateRange.push(date.getTime());
+    }
+
+    return dateRange;
+}
+
 const postConvertion = (jsonData, query) => {
     if (!this.isEmpty(jsonData.request.select)) {
         query["_source"] = jsonData.request.select;
     }
 
     if (jsonData.request.range) {
+        // Convert Range Input into Standard Milliseconds
+        jsonData.request.range = convertInputRange(jsonData.request.range);
+        
         rangeConv = converter.rangeConvert(jsonData.request.range);
         range = {
             "range": {
@@ -122,6 +138,11 @@ const postConvertion = (jsonData, query) => {
         query.query.bool.must_not.push(parentQuery);
     }else{
         query.query.bool.must_not = [parentQuery];
+    }
+
+    // Adding max number of return in query
+    if(jsonData.request.max) {
+        query["size"] = jsonData.request.max;
     }
 
     return query;
