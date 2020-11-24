@@ -10,7 +10,6 @@ const { query } = require("express");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-var queryCache = {};
 
 app.use(bodyParser.json({limit:1024*1024*20, type:'application/json'}));
 app.use(bodyParser.urlencoded({ extended:true,limit:1024*1024*20,type:'application/x-www-form-urlencoded' }));
@@ -27,11 +26,6 @@ app.get("/search", async (req, res) => {
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     addOn.logAccess("[GET] /search", req.body, ip);
-
-    if(queryCache.search[addOn.getSHA1(req.body)]){
-        res.json(queryCache.search[addOn.getSHA1(req.body)]);
-        return 0;
-    }
 
     var data = {};
     // Convert Request to Elasticsearch Boolean Search
@@ -57,7 +51,6 @@ app.get("/search", async (req, res) => {
         data = {"error": error.message}
     }
 
-    queryCache.search[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
@@ -72,12 +65,7 @@ app.get("/search/sentiment", async (req, res) => {
 
     var data = {};
 
-    if(queryCache.sentiment[addOn.getSHA1(req.body)]){
-        res.json(queryCache.sentiment[addOn.getSHA1(req.body)]);
-        return 0;
-    }
-
-    // try {
+    try {
         jsonData = req.body;
 
         if(!addOn.isValidRequest(jsonData, res)){
@@ -116,12 +104,11 @@ app.get("/search/sentiment", async (req, res) => {
 
         // Convert Elasticsearch Response to Simpler JSON Format
         data = formatter.outputJSONFormatter(responseData);
-    // } catch (error) {
-    //     console.log(error.message);
-    //     data = {"error": error.message};
-    // }
+    } catch (error) {
+        console.log(error.message);
+        data = {"error": error.message};
+    }
 
-    // queryCache.sentiment[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
@@ -167,10 +154,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         }
 
         req.body.interval = interval;
-        if(queryCache.histogram[addOn.getSHA1(req.body)]){
-            res.json(queryCache.histogram[addOn.getSHA1(req.body)]);
-            return 0;
-        }
 
         jsonData = req.body;
         
@@ -222,7 +205,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
         data = {"error": error.message};
     }
 
-    queryCache.histogram[addOn.getSHA1(req.body)] = data;
     res.json(data);
 });
 
@@ -274,23 +256,4 @@ const zeroHour = (date) => {
     return date;
 }
 
-const infiniteLoop = async () => {
-    const sleep = 1000*60*5;
-    var date = new Date();
-    date.setHours(date.getHours() + 7);
-    var dateStr = date.toISOString();
-
-    while (true){
-        console.log(dateStr,"Delete Cache");
-        console.log(dateStr,JSON.stringify(queryCache));
-        queryCache = {
-            "search": {},
-            "histogram": {},
-            "sentiment": {}
-        };
-        await new Promise(resolve => setTimeout(resolve, sleep));
-    }
-}
-
-infiniteLoop();
 app.listen(PORT, () => {});
