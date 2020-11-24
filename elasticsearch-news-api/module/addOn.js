@@ -41,6 +41,10 @@ exports.queryCondition = (jsonData) => {
     var index = 0;
     if (baseQuery) {
         for (listQuery of baseQuery) {
+            if (!isValidQuery(listQuery)){
+                return { "error": "Query is incomplete"};
+            }
+
             var queryValue = listQuery.value;
             var queryField = listQuery.field;
             var queryRange = listQuery.range;
@@ -54,7 +58,6 @@ exports.queryCondition = (jsonData) => {
                 }
 
                 // Convert input query into bool search query for Elasticsearch
-                console.log(queryValue);
                 var queryTemp = converter.convertQuery(queryValue, queryField);
                 if (queryTemp.error) {
                     return queryTemp;
@@ -114,9 +117,13 @@ const postConvertion = (jsonData, query) => {
 
     if (jsonData.request.range) {
         // Convert Range Input into Standard Milliseconds
-        jsonData.request.range = convertInputRange(jsonData.request.range);
+        requestRange = convertInputRange(jsonData.request.range);
+        console.log(requestRange);
+        if(isNaN(requestRange[0]) || isNaN(requestRange[1])){
+            return {"error": "Input range invalid, please use dd/mm/yyyy format instead"}
+        }
         
-        rangeConv = converter.rangeConvert(jsonData.request.range);
+        rangeConv = converter.rangeConvert(requestRange);
         range = {
             "range": {
                 "datetime_ms": {
@@ -161,4 +168,9 @@ const rangeInsert = (query, range) => {
     }
 
     return query;
+}
+
+const isValidQuery = (query) => {
+    console.log((!query.field && !query.value && !query.range));
+    return ((query.value && query.field) || (query.field && query.range)) || (!query.field && !query.value && !query.range);
 }
