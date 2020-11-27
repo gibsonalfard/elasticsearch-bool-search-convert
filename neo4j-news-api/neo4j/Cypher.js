@@ -10,6 +10,16 @@ class Cypher {
         // Handle multiple token
         // Replace " with \"
         keyword = keyword.replace(/\"/g, '\\\"');
+        keyword = keyword.replace(/\'/g, '\\\"');
+
+        // Add parenthesis
+        if(keyword.indexOf('(') != 1 && keyword.indexOf(')') != keyword.length-1){
+            keyword = "(" + keyword + ")";
+        }
+
+        // Replace "NOT" with "* NOT"
+        keyword = keyword.replace(/NOT/g, '* NOT');
+
         return keyword;
     }
 
@@ -20,7 +30,7 @@ class Cypher {
 
     searchByKeyword(keyword) {
         const nodeName = "node";
-        return `CALL db.index.fulltext.queryNodes("${FULLTEXT_INDEX_NAME}", "${keyword}") YIELD ${nodeName} as news`;
+        return `CALL db.index.fulltext.queryNodes("${FULLTEXT_INDEX_NAME}", "${keyword}") YIELD ${nodeName} as news, score`;
     }
 
     matchNews() {
@@ -173,6 +183,11 @@ class Cypher {
 
         // client
         if(field.includes(`client.`)) {
+            return field;
+        }
+        
+        // Score
+        if(field.includes(`score`)) {
             return field;
         }
 

@@ -4,7 +4,7 @@
   "description": "Middleware for querying Neo4j data with JSON query, instead of Cypher query.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
   "author": "Cahya Ramadhan",
   "license": "ISC",

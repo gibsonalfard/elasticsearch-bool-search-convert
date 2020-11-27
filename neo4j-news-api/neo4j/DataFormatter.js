@@ -40,6 +40,10 @@ class DataFormatter {
         news.location[0].country = object["Country"];
         news.location[0].city = object["City"];
 
+        if(object["score"]) {
+            news.score = object["score"];
+        }
+
         return news;
     }
 
@@ -68,6 +72,11 @@ class DataFormatter {
             let news = {};
             // For every fields
             for(let j = 0; j < data[i]._fields.length; j++) {
+                if(data[i].keys[j] == "score") {
+                    let key = "score";
+                    obj[key] = data[i]._fields[j];
+                    continue;
+                }
                 let key = data[i]._fields[j].labels[0];
                 if(key == "Sentiment") {
                     let feature = data[i]._fields.filter(o => {
@@ -139,8 +148,13 @@ class DataFormatter {
             let obj = {};
             // For every fields
             for(let j = 0; j < data[i]._fields.length; j++) {
+                if(data[i].keys[j] == "score") {
+                    let key = "score";
+                    obj[key] = data[i]._fields[j];
+                    continue;
+                }
                 let key = data[i]._fields[j].labels[0];
-                obj[key] = data[i]._fields[j].properties;
+                obj[key] = data[i]._fields[j].properties;    
             }
             formattedData.push(this.createNews(obj));
         }

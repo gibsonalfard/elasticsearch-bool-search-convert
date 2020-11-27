@@ -17,7 +17,7 @@ class Driver {
         const source = this.requestParser.getSource(request);
         const select = this.requestParser.getSelect(request);
         const cypherQuery = this.queryConverter.toCypher(query, range, select, matchCode, returnCode);
-        console.log(`\n\n${cypherQuery}`);
+        // console.log(`\n\n${cypherQuery}`);
         // return cypherQuery;
         const result = await this.executeQuery(cypherQuery, source);
         const formattedData = this.dataFormatter.formatData(result, range, select, matchCode, returnCode);
