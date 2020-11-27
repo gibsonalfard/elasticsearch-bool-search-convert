@@ -30,11 +30,17 @@ class Driver {
 
         try {
             result = await session.run(cypherQuery);
+        } catch (err) {
+            // console.log(err);
         } finally {
             await session.close();
         }
-        
-        return result.records;
+
+        if(result) {
+            return result.records;
+        } else {
+            return null;
+        }
     }
 
     async close() {

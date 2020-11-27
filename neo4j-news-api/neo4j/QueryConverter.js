@@ -46,13 +46,21 @@ class QueryConverter {
                 if(keywords == ``) {
                     keywords = this.cypher.getSearchKeyword(queries[i]);
                 } else {
-                    keywords = keywords.concat(this.cypher.and(), this.cypher.getSearchKeyword(queries[i]));
+                    if(queries[i].andMerge) {
+                        keywords = keywords.concat(this.cypher.and(), this.cypher.getSearchKeyword(queries[i]));
+                    } else {
+                        keywords = keywords.concat(this.cypher.or(), this.cypher.getSearchKeyword(queries[i]));
+                    }
                 }
             } else if(JSON.stringify(queries[i]) != "{}") {
                 if(this.whereQuery == ``) {
                     this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereCondition(queries[i]));
                 } else {
-                    this.whereQuery = this.whereQuery.concat(this.cypher.and(), this.cypher.whereCondition(queries[i]));
+                    if(queries[i].andMerge) {
+                        this.whereQuery = this.whereQuery.concat(this.cypher.and(), this.cypher.whereCondition(queries[i]));
+                    } else {
+                        this.whereQuery = this.whereQuery.concat(this.cypher.or(), this.cypher.whereCondition(queries[i]));
+                    }
                 }
             }
         }

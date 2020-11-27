@@ -199,7 +199,12 @@ class DataFormatter {
         return histogramData;
     }
 
-    formatData(data, dateRange, select, matchCode, returnCode) {            
+    formatData(data, dateRange, select, matchCode, returnCode) {
+        // If no data or error when getting data from Neo4j
+        if(!data) {
+            // Return empty array
+            return this.wrapData([]);
+        }
         switch(returnCode) {
             case 1:
                 if(select) {

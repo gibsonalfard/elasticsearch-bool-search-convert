@@ -6,7 +6,15 @@ class Cypher {
         this.params = params;
     }
 
+    modifyKeyword(keyword) {
+        // Handle multiple token
+        // Replace " with \"
+        keyword = keyword.replace(/\"/g, '\\\"');
+        return keyword;
+    }
+
     getSearchKeyword(query) {
+        query.value = this.modifyKeyword(query.value);
         return "(" + query.field + ":" + query.value + ")";
     }
 
