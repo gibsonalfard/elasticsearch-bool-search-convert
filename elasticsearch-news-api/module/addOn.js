@@ -7,6 +7,15 @@ exports.getSHA1 = (input) => {
     return crypto.createHash('sha1').update(JSON.stringify(input)).digest('hex');
 }
 
+/* 
+Method to validate if a request is valid request. Valid request have some condition
+1. Request Body contain 'request' field
+2. Request Body contain source of data, define by 'source' field
+
+This method will return HTTP response error. Have 2 parameter. 
+first parameter is JSON type parameter and represent request.body.
+second parameter is Response type parameter or HTTP response.
+*/
 exports.isValidRequest = (jsonData, res) => {
     if (jsonData.request == undefined) {
         data = { "error": "Request Body Undefined" };
@@ -29,8 +38,13 @@ exports.isEmpty = (obj) => {
     }
 }
 
+/* 
+Method to convert boolean conditional query into Elasticsearch Boolean search query.
+Input for this method is HTTP Request Body in JSON format and return complete Elasticsearch boolean query 
+ready to run in Elasticsearch. This method will call another method to convert query and call 
+post convertion method to handle another conditional query such as max, select, and range.
+*/
 exports.queryCondition = (jsonData) => {
-    // jsonData = req.body;
     var baseQuery = jsonData.request.query;
     var query = {
         "query": {
@@ -80,13 +94,18 @@ exports.queryCondition = (jsonData) => {
         }
     }
 
-    // console.log(JSON.stringify(query));
-
     query = postConversion(jsonData, query);
 
     return query;
 }
 
+/*
+Method to print access log to node.js console. If you run this middlware using forever library this method
+will print access log to log file manage by forever. This method have 3 input that will be printed in console.
+Endpoint is string that tell what end-point hitted by client
+body is Request Body that contain boolean query
+ip is client address that hit this middleware
+ */
 exports.logAccess = (endpoint, body, ip) => {
     var date = new Date();
     // Change Timezone to Asia/Jakarta (+7)
@@ -99,6 +118,11 @@ exports.logAccess = (endpoint, body, ip) => {
     console.log("");
 }
 
+/*
+This method check if two parameter is a same day. This method have 2 date parameter, 
+'from' represent start date and 'to' represent end date for date range. Time in 'from' always set to 00:00:00
+and time in 'to' always set to 23:59:59.
+*/
 exports.isSameDay = (from, to) => {
     var fromDate = new Date(from);
     var toDate = new Date(to);
@@ -108,6 +132,13 @@ exports.isSameDay = (from, to) => {
         && (fromDate.getDate() == toDate.getDate());
 }
 
+/*
+Method to finalize Elasticsearch boolean query. This method process select query to return only 
+field define in 'select' field, if 'select' field exist in request body. This method also process limit query 
+to limit returned data if 'max' field exist in request body, otherwise Elasticsearch will limit data by Top 10.
+This field process range query to limit returned data between two date defined in 'range' field, if 'range' field exist
+in request body. And last but not least, this method add parent-child query to return only parent data.
+*/
 const postConversion = (jsonData, query) => {
     if (!this.isEmpty(jsonData.request.select)) {
         query["_source"] = jsonData.request.select;
@@ -152,6 +183,13 @@ const postConversion = (jsonData, query) => {
     return query;
 }
 
+/*
+Method to process range query inside 'query' field, range query outside query field 
+will process by postConditional method above. This method provide middleware with 
+relational query such as greater than, and less then. 'value' field inside 'query' field
+only process boolean search, if you need to do relational query such as greater than x value,
+you can use 'range' field, inside 'query' field.
+*/
 const rangeInsert = (query, range) => {
     if (query.query.bool.must) {
         query.query.bool.must.push(range);
@@ -167,6 +205,12 @@ const rangeInsert = (query, range) => {
     return query;
 }
 
+/*
+Method to check if query is valid. 'query' field in request body is not mandatory, 
+but if you define that field, you have to define value and field or field and range 
+inside 'query' field. If you not meet that condition, middleware will send error message
+tell you that your query isn't complete.
+*/
 const isValidQuery = (query) => {
     return ((query.value && query.field) || (query.field && query.range)) || (!query.field && !query.value && !query.range);
 }
