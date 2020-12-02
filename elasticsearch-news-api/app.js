@@ -122,7 +122,6 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     var data = {};
     var toDate = new Date();
     var fromDate = new Date();
-    var interval = "week";
     var urlLog = "[GET] /search/sentiment/histogram";
 
     toDate.setDate(30);
@@ -133,25 +132,25 @@ app.get("/search/sentiment/histogram", async (req, res) => {
     to = toDate.getTime();
     from = fromDate.getTime();
 
-    if(req.query.interval){
-        interval = req.query.interval;
-        urlLog = `[GET] /search/sentiment/histogram?interval=${interval}`;
-    }
-
-    addOn.logAccess(urlLog, req.body, ip);
-
     try {
         if(!addOn.isValidRequest(req.body, res)){
             return 0;
         }
 
         if(req.body.request.range){
-            rangeConv = converter.rangeConvert(req.body.request.range);
-            to = rangeConv.to;
-            from = rangeConv.from;
+            rangeConv = converter.convertInputRange(req.body.request.range);
+            to = rangeConv[1];
+            from = rangeConv[0];
         }else{
             req.body.request.range = [from, to];
         }
+
+        var interval = addOn.isSameDay(from, to) ? "hour" : "week";
+        if(req.query.interval){
+            interval = req.query.interval;
+            urlLog = `[GET] /search/sentiment/histogram?interval=${interval}`;
+        }
+        addOn.logAccess(urlLog, req.body, ip);
 
         req.body.interval = interval;
 

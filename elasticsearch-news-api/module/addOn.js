@@ -93,10 +93,19 @@ exports.logAccess = (endpoint, body, ip) => {
     date.setHours(date.getHours() + 7);
     var dateStr = date.toISOString();
 
-    console.log(dateStr, "IP-ADDRESS:", ip);
+    console.log(dateStr, "IP-ADDRESS", ip);
     console.log(dateStr, "ENDPOINT", endpoint);
     console.log(dateStr, "REQUEST-BODY", JSON.stringify(body));
     console.log("");
+}
+
+exports.isSameDay = (from, to) => {
+    var fromDate = new Date(from);
+    var toDate = new Date(to);
+
+    return (fromDate.getFullYear() == toDate.getFullYear()) 
+        && (fromDate.getMonth() == toDate.getMonth()) 
+        && (fromDate.getDate() == toDate.getDate());
 }
 
 const postConversion = (jsonData, query) => {

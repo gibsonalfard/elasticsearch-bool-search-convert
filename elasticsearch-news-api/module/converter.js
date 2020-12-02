@@ -222,9 +222,15 @@ exports.convertInputRange = (range) => {
     var dateRange = [];
 
     var dateArr = range.split(" - ");
-    for(item of dateArr){
-        var itemArr = item.split("/");
+    for(item in dateArr){
+        var itemArr = dateArr[item].split("/");
         var date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
+        if(item == dateArr.length-1){
+            date.setHours(23);
+            date.setMinutes(59);
+            date.setSeconds(59);
+        }
+
         dateRange.push(date.getTime());
     }
 
