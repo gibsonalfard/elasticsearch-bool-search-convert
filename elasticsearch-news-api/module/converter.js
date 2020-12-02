@@ -1,6 +1,11 @@
 const { query } = require("express");
 const addOn = require("./addOn");
 
+/*
+Method to handle with nested boolean conditional. Nested boolean usually
+come in parentheses format to identify which condition should process first.
+This method convert that nested conditional into Elasticsearch boolean search format.
+*/
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     list = queryValue.split(splitOpr);
     parentOperant = [];
@@ -37,6 +42,10 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     return parentOperant;
 }
 
+/*
+This method handle conversion of simple boolean condition such as NOT, AND, and OR.
+into Elasticsearch boolean search query format.
+*/
 const simpleConverter = (queryValue, queryField) => {
     var boolOperant = {
         "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
@@ -83,12 +92,6 @@ const simpleConverter = (queryValue, queryField) => {
 
         key = operator == " AND " ? "must" : "should";
         if(!addOn.isEmpty(operant)){
-            // if(boolOperant[key]){
-            //     boolOperant[key].push(operant);
-            // }else{
-            //     boolOperant[key] = operant;
-            // }
-
             boolOperant[key] = operant;
 
             if(key == "should" && boolOperant["must_not"]){
@@ -101,6 +104,10 @@ const simpleConverter = (queryValue, queryField) => {
     return boolOperant;
 }
 
+/*
+This method handle nested not condition. i.e NOT (X OR B). This condition cannot be process using
+simple converter because we have to do deMorgan's rule to process this condition into NOT X AND NOT B.
+*/
 const notConverter = (expr, queryField) =>{
     pattern = expr.match(/( AND | OR )/gi);
 
@@ -162,6 +169,10 @@ const deMorganLaw = (expr) => {
     return result;
 }
 
+/*
+This method handle complex condition, normally nested condition and transform that complex condition
+into simpler condition, so simpleconverter and nestedconverter can convert that condition.
+*/
 const moreComplexConverter = (queryValue, queryField, pattern) => {
     if(queryValue.includes("OR")){
         var query = nestedConvert(queryValue, queryField, pattern, " OR ");
@@ -194,30 +205,9 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
     return query;
 }
 
-const convertAggregation = (aggs, index = 0) => {
-    var aggrQuery = {}
-    try {
-        item = aggs[index]
-
-        if(item.field.includes(">")){
-            value = item.field.split(">");
-            temp = `{"${item.name}": {"${value[0]}": {"type":"${value[1]}"}}}`;
-        }else{
-            temp = `{"${item.name}": {"terms": {"field": "${item.field}"}}}`;
-        }
-
-        aggrQuery = JSON.parse(temp);
-
-        if(index+1 < aggs.length){
-            aggrQuery[item.name].aggs = convertAggregation(aggs, index+1);
-        }
-    } catch (error) {
-        console.log(error.message);
-    }
-
-    return aggrQuery;
-}
-
+/*
+This method convert date range from dd/mm/yyyy format into milliseconds format
+*/
 exports.convertInputRange = (range) => {
     var dateRange = [];
 
@@ -237,42 +227,9 @@ exports.convertInputRange = (range) => {
     return dateRange;
 }
 
-exports.numberRangeConvert = (rangeArr) => {
-    var from = rangeArr[0];
-    var to = rangeArr[1];
-    var range = {};
-    
-    if(from > 0 ){
-        range.gte = from;
-    }
-
-    if(to > 0){
-        range.lte = to;
-    }
-
-    return range
-}
-
-exports.rangeConvert = (rangeArr) => {
-    var from = rangeArr[0];
-    var to = rangeArr[1];
-    var d = new Date();
-    var currentMs = d.getTime();
-    
-    if(from == "now"){
-        to = from = currentMs;
-    }else if(to == "now"){
-        to = currentMs;
-    }
-    
-    var range = {
-        "from": from,
-        "to": to
-    };
-    
-    return range;
-}
-
+/*
+Main Method to do conversion
+*/
 exports.convertQuery = (queryValue, queryField) => {
     var result = {};
     try {
@@ -328,6 +285,9 @@ exports.convertQuery = (queryValue, queryField) => {
     return result;
 }
 
+/*
+This method merge 2 conditional query into 1 conditional query in AND conditional manner
+*/
 exports.andMerge = (query1, query2) => {
     if(query1.query.bool.must){
         query1.query.bool.must.push(query2.query);
@@ -338,6 +298,9 @@ exports.andMerge = (query1, query2) => {
     return query1;
 }
 
+/*
+This method merge 2 conditional query into 1 conditional query in OR conditional manner
+*/
 exports.mergeQuery = (query1, query2) => {
     if(query2.query.bool.must){
         if(query1.query.bool.should){

@@ -1,5 +1,9 @@
 const addOn = require("./addOn");
 
+/* 
+This method format quotation mark into parentheses mark 
+and convert token inside quotation mark in AND relational manner
+*/
 exports.quoteFormatter = (text, list) => {
     for(item of list){
         replaceRaw = item.replace(/[\"\']/g, "");
@@ -12,6 +16,9 @@ exports.quoteFormatter = (text, list) => {
     return text;
 }
 
+/* 
+Format response from Elasticsearch into simpler and readable format
+*/
 exports.outputJSONFormatter = (elasticResponse) => {
     var jsonData = [];
     var formatData = {};
@@ -34,6 +41,9 @@ exports.outputJSONFormatter = (elasticResponse) => {
     return formattedJSON;
 }
 
+/* 
+Format Histogram response from Elasticsearch into simpler and readable format
+*/
 exports.histogramFormatter = (elasticResponse) => {
     var historamJSON = [];
     var sentimentStr = "";
@@ -74,6 +84,9 @@ exports.histogramFormatter = (elasticResponse) => {
     return historamJSON;
 }
 
+/* 
+Make JSON object that have zero value for every sentiment in sentimentList
+*/
 const makeZeroSentiment = (sentimentList) => {
     var sentimentStr = "{";
     var item;
@@ -85,6 +98,9 @@ const makeZeroSentiment = (sentimentList) => {
     return sentimentStr;
 }
 
+/* 
+Method to create sentimentList from aggregation data returned by Elasticsearch 
+*/
 const findSentimentList = (sentimentArr) => {
     var sentimentList = [];
     var item;
@@ -100,6 +116,9 @@ const findSentimentList = (sentimentArr) => {
     return sentimentList;
 }
 
+/*
+Find sentiment by sentiment id
+*/
 const getSentimentById = (id, aggregation) => {
     var sentimentRaw = {};
 

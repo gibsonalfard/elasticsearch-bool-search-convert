@@ -151,12 +151,11 @@ const postConversion = (jsonData, query) => {
             return {"error": "Input range invalid, please use dd/mm/yyyy format instead"}
         }
         
-        rangeConv = converter.rangeConvert(requestRange);
         range = {
             "range": {
                 "datetime_ms": {
-                    "gte": rangeConv.from,
-                    "lte": rangeConv.to
+                    "gte": requestRange[0],
+                    "lte": requestRange[1]
                 }
             }
         }
@@ -184,11 +183,7 @@ const postConversion = (jsonData, query) => {
 }
 
 /*
-Method to process range query inside 'query' field, range query outside query field 
-will process by postConditional method above. This method provide middleware with 
-relational query such as greater than, and less then. 'value' field inside 'query' field
-only process boolean search, if you need to do relational query such as greater than x value,
-you can use 'range' field, inside 'query' field.
+This method insert range query process by postConvertion method to Elasticsearch boolean query
 */
 const rangeInsert = (query, range) => {
     if (query.query.bool.must) {
