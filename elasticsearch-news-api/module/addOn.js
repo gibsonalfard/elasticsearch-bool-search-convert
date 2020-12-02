@@ -80,7 +80,9 @@ exports.queryCondition = (jsonData) => {
         }
     }
 
-    query = postConvertion(jsonData, query);
+    // console.log(JSON.stringify(query));
+
+    query = postConversion(jsonData, query);
 
     return query;
 }
@@ -97,28 +99,14 @@ exports.logAccess = (endpoint, body, ip) => {
     console.log("");
 }
 
-const convertInputRange = (range) => {
-    var dateRange = [];
-
-    var dateArr = range.split(" - ");
-    for(item of dateArr){
-        var itemArr = item.split("/");
-        var date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
-        dateRange.push(date.getTime());
-    }
-
-    return dateRange;
-}
-
-const postConvertion = (jsonData, query) => {
+const postConversion = (jsonData, query) => {
     if (!this.isEmpty(jsonData.request.select)) {
         query["_source"] = jsonData.request.select;
     }
 
     if (jsonData.request.range) {
         // Convert Range Input into Standard Milliseconds
-        requestRange = convertInputRange(jsonData.request.range);
-        console.log(requestRange);
+        requestRange = converter.convertInputRange(jsonData.request.range);
         if(isNaN(requestRange[0]) || isNaN(requestRange[1])){
             return {"error": "Input range invalid, please use dd/mm/yyyy format instead"}
         }
@@ -171,6 +159,5 @@ const rangeInsert = (query, range) => {
 }
 
 const isValidQuery = (query) => {
-    console.log((!query.field && !query.value && !query.range));
     return ((query.value && query.field) || (query.field && query.range)) || (!query.field && !query.value && !query.range);
 }

@@ -64,10 +64,13 @@ const simpleConverter = (queryValue, queryField) => {
     operator = queryValue.match(/( AND | OR )/gi);
 
     if(operator){
+        if(!boolOperant["must_not"]){
+            boolOperant = {};
+        }
         if(operator.includes(" AND ") && operator.includes(" OR ")){
             return {"error": "Missing Parentheses in Query Value"}
         }
-
+        
         list = queryValue.split(operator[0]);
         var operant = [];
 
@@ -80,11 +83,13 @@ const simpleConverter = (queryValue, queryField) => {
 
         key = operator == " AND " ? "must" : "should";
         if(!addOn.isEmpty(operant)){
-            if(boolOperant[key]){
-                boolOperant[key].push(operant);
-            }else{
-                boolOperant[key] = operant;
-            }
+            // if(boolOperant[key]){
+            //     boolOperant[key].push(operant);
+            // }else{
+            //     boolOperant[key] = operant;
+            // }
+
+            boolOperant[key] = operant;
 
             if(key == "should" && boolOperant["must_not"]){
                 boolOperant.should.push({"bool": {"must_not": boolOperant["must_not"]}});
@@ -211,6 +216,19 @@ const convertAggregation = (aggs, index = 0) => {
     }
 
     return aggrQuery;
+}
+
+exports.convertInputRange = (range) => {
+    var dateRange = [];
+
+    var dateArr = range.split(" - ");
+    for(item of dateArr){
+        var itemArr = item.split("/");
+        var date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
+        dateRange.push(date.getTime());
+    }
+
+    return dateRange;
 }
 
 exports.numberRangeConvert = (rangeArr) => {
