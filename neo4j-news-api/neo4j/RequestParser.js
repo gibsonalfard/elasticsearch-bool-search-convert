@@ -47,6 +47,15 @@ class RequestParser {
             return null;
         }
     }
+
+    getData(request) {
+        if(request.request.data) {
+            return request.request.data;
+        } else {
+            return {};
+        }
+    }
+
 }
 
 module.exports = RequestParser;

@@ -11,6 +11,23 @@ class Driver {
         this.dataFormatter = new DataFormatter();
     }
 
+    async insert(request, insertCode) {
+        const data = this.requestParser.getData(request);
+        const source = this.requestParser.getSource(request);
+        if(data instanceof Array) {
+            let result = [];
+            for(let i = 0; i < data.length; i++) {
+                let insertQuery = this.queryConverter.toCypherInsert(data[i], insertCode);
+                result[i] = await this.executeQuery(insertQuery, source);
+            }
+            return result;
+        } else {
+            const insertQuery = this.queryConverter.toCypherInsert(data, insertCode);
+            const result = await this.executeQuery(insertQuery, source);
+            return result;
+        }
+    }
+
     async search(request, matchCode, returnCode) {
         const query = this.requestParser.getQuery(request);
         const range = this.requestParser.getRange(request, returnCode);

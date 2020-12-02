@@ -1,10 +1,12 @@
 
 const Cypher = require('./Cypher');
+const CypherInsert = require('./CypherInsert');
 
 class QueryConverter {
     constructor(params) {
         this.params = params;
         this.cypher = new Cypher;
+        this.cypherInsert = new CypherInsert;
         this.searchQuery = ``;
         this.whereQuery = ``;
     }
@@ -119,6 +121,19 @@ class QueryConverter {
         cypherQuery = cypherQuery.concat(this.whereQuery, " ");
         cypherQuery = cypherQuery.concat(this.getReturnQuery(returnCode, fields), " ");
         return cypherQuery;
+    }
+
+    toCypherInsert(data, insertCode) {
+        switch(insertCode) {
+            case 1:
+                return this.cypherInsert.getInsertNewsQuery(data);
+            case 2:
+                return this.cypherInsert.getInsertSentimentQuery(data);
+            case 3:
+                return this.cypherInsert.getInsertClientQuery(data);
+            default:
+                return ``;
+        }
     }
 
 }
