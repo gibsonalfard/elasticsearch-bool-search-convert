@@ -37,8 +37,9 @@ There are some JSON format you have to understand before sending request to this
 Keys | Status | Description
 ------------ | ------------- | -------------
 **request** | **required** | Root element of JSON request you send
-**request.select** | optional | Array which represent field you want to get from response output
 **request.source** | **required** | Contain string represent name of source data (index or database)
+**request.select** | optional | Array which represent field you want to get from response output
+**request.max** | optional | Integer that define maximal number of data returned by Elasticsearch
 **request.range** | optional | Array represent [start date, end date] in milliseconds format
 **request.query** | optional | Array represent query you try to convert 
 **request.query.field** | **required** | String represent field for query
@@ -52,6 +53,7 @@ Keys | Status | Description
         "select": ["productId","productName", "price"],
         "source": "product",
         "range": ["1601909520150","1602262800000"],
+        "max": 10,
         "query": [{
             "field": "category",
             "value": "electronic AND home" 
