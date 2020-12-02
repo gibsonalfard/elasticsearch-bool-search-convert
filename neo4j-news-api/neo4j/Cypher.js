@@ -12,13 +12,16 @@ class Cypher {
         keyword = keyword.replace(/\"/g, '\\\"');
         keyword = keyword.replace(/\'/g, '\\\"');
 
+        // Replace "(NOT something)" with "NOT something"
+        keyword = keyword.replace(/\((NOT \(?[\w\s?]+\)?)\)/g, "$1")
+
+        // Replace "NOT" with "* NOT"
+        keyword = keyword.replace(/NOT/g, '* NOT');
+
         // Add parenthesis
         if(keyword.indexOf('(') != 1 && keyword.indexOf(')') != keyword.length-1){
             keyword = "(" + keyword + ")";
         }
-
-        // Replace "NOT" with "* NOT"
-        keyword = keyword.replace(/NOT/g, '* NOT');
 
         return keyword;
     }
