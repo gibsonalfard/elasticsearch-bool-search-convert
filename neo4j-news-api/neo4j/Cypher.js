@@ -6,6 +6,7 @@ class Cypher {
         this.params = params;
     }
 
+    // Modify full-text search keyword
     modifyKeyword(keyword) {
         // Handle multiple token
         // Replace " with \"
@@ -36,10 +37,12 @@ class Cypher {
         return `CALL db.index.fulltext.queryNodes("${FULLTEXT_INDEX_NAME}", "${keyword}") YIELD ${nodeName} as news, score`;
     }
 
+    // Match News
     matchNews() {
         return `MATCH (news:News)`;
     }
 
+    // Match News and its properties
     matchNewsProperties() {
         return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
@@ -56,6 +59,7 @@ class Cypher {
                         (location)-[:HAS_CITY]-(city:City)`;        
     }
 
+    // Match News and its properties and sentiment
     matchNewsSentiment() {
         return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
@@ -75,6 +79,7 @@ class Cypher {
                         (location)-[:HAS_CITY]-(city:City)`;        
     }
 
+    // Match News and its properties and sentiment and client
     matchNewsSentimentClient() {
         return `\nMATCH (news)-[:HAS_META]-(meta:Meta),
                         (meta)-[:HAS_SITE]-(site:Site),
@@ -106,6 +111,7 @@ class Cypher {
         return `\nWHERE `;
     }
 
+    // Add "" to condition if query for string
     whereConditionByType(field, value) {
         if(typeof value == "string") {
             return `${field} = "${value}"`;
@@ -114,6 +120,7 @@ class Cypher {
         }
     }
 
+    // Condition if query search for specific date range
     whereConditionDateRange(dateRange) {
         try {
             return `news.datetime_ms >= ${dateRange[0]} 
@@ -124,6 +131,7 @@ class Cypher {
         }
     }
 
+    // Create query for "WHERE" condition
     whereCondition(query) {
         try {
             const dotCount = query.field.split(".").length - 1;
@@ -160,6 +168,7 @@ class Cypher {
         }
     }
 
+    // Create query for "WHERE" condition
     convertField(field) {
         const dotCount = field.split(".").length - 1;
 
@@ -206,6 +215,7 @@ class Cypher {
         return ", ";
     }
 
+    // Return only specific fields
     returnSelect(fields) { 
         let returnQuery = ``;
         for(let i = 0; i < fields.length; i++) {

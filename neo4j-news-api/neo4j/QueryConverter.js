@@ -86,35 +86,37 @@ class QueryConverter {
     }
 
     setQuery(query, dateRange) {
-        if(query instanceof Array) {
-            this.setQueryArray(query, dateRange);
+        if(query.field == "content" || query.field == "title") {
+            this.searchQuery = this.cypher.searchByKeyword(this.cypher.getSearchKeyword(query));
+        } else if(JSON.stringify(query) == "{}") {
+            this.searchQuery = this.cypher.matchNews();
         } else {
-            if(query.field == "content" || query.field == "title") {
-                this.searchQuery = this.cypher.searchByKeyword(this.cypher.getSearchKeyword(query));
-            } else if(JSON.stringify(query) == "{}") {
-                this.searchQuery = this.cypher.matchNews();
-            } else {
-                if(this.whereQuery == ``) {
-                    this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereCondition(query));
-                }
+            if(this.whereQuery == ``) {
+                this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereCondition(query));
             }
-            if(dateRange) {
-                if(this.whereQuery == ``) {
-                    this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereConditionDateRange(dateRange));
-                } else {
-                    this.whereQuery = this.whereQuery.concat(this.cypher.and(), this.cypher.whereConditionDateRange(dateRange));
-                }
+        }
+        if(dateRange) {
+            if(this.whereQuery == ``) {
+                this.whereQuery = this.whereQuery.concat(this.cypher.where(), this.cypher.whereConditionDateRange(dateRange));
+            } else {
+                this.whereQuery = this.whereQuery.concat(this.cypher.and(), this.cypher.whereConditionDateRange(dateRange));
             }
         }
     }
 
+    // Convert query to cypher statement / query
     toCypher(query, dateRange, fields, matchCode, returnCode) {
         let cypherQuery = ``;
 
         this.searchQuery = ``;
         this.whereQuery = ``;
 
-        this.setQuery(query, dateRange);
+        // If given query is an array
+        if(query instanceof Array) {
+            this.setQueryArray(query, dateRange);
+        } else {
+            this.setQuery(query, dateRange);
+        }
 
         cypherQuery = cypherQuery.concat(this.searchQuery, " ");
         cypherQuery = cypherQuery.concat(this.getMatchQuery(matchCode), " ");
@@ -123,6 +125,7 @@ class QueryConverter {
         return cypherQuery;
     }
 
+    // Convert insert query to cypher statement / query
     toCypherInsert(data, insertCode) {
         switch(insertCode) {
             case 1:
