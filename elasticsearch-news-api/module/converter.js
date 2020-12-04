@@ -1,6 +1,11 @@
 const { query } = require("express");
 const addOn = require("./addOn");
 
+/*
+Method to handle with nested boolean conditional. Nested boolean usually
+come in parentheses format to identify which condition should process first.
+This method convert that nested conditional into Elasticsearch boolean search format.
+*/
 const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     list = queryValue.split(splitOpr);
     parentOperant = [];
@@ -11,7 +16,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
             
-            var childQuery = simpleConverter(childValue, queryField);
+            let childQuery = simpleConverter(childValue, queryField);
             if(childQuery.error){
                 return childQuery;
             }
@@ -21,7 +26,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
             };
             parentOperant.push(childQuery);
         }else if(item){
-            var childQuery = simpleConverter(item, queryField);
+            let childQuery = simpleConverter(item, queryField);
             if(childQuery.error){
                 return childQuery;
             }
@@ -37,8 +42,12 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
     return parentOperant;
 }
 
+/*
+This method handle conversion of simple boolean condition such as NOT, AND, and OR.
+into Elasticsearch boolean search query format.
+*/
 const simpleConverter = (queryValue, queryField) => {
-    var boolOperant = {
+    let boolOperant = {
         "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
@@ -46,7 +55,7 @@ const simpleConverter = (queryValue, queryField) => {
     pattern = queryValue.match(regex);
 
     if(pattern){
-        var operant = [];
+        let operant = [];
         queryValue = queryValue.replace(/NOT \w+/gi, "");
         
         for (item of pattern){
@@ -56,15 +65,7 @@ const simpleConverter = (queryValue, queryField) => {
         }
 
         boolOperant = {
-            "must_not":  operant,
-            "must":[{
-                "has_child":{
-                    "type": "sentiment",
-                    "query": {
-                        "bool":{}
-                    }
-                }
-            }]
+            "must_not":  operant
         }
 
     }
@@ -72,16 +73,15 @@ const simpleConverter = (queryValue, queryField) => {
     operator = queryValue.match(/( AND | OR )/gi);
 
     if(operator){
-        if(!boolOperant.must_not){
-            boolOperant.must = undefined;
+        if(!boolOperant["must_not"]){
+            boolOperant = {};
         }
-
         if(operator.includes(" AND ") && operator.includes(" OR ")){
             return {"error": "Missing Parentheses in Query Value"}
         }
-
+        
         list = queryValue.split(operator[0]);
-        var operant = [];
+        let operant = [];
 
         for(item of list){
             if(item != " " && item != ""){
@@ -90,12 +90,13 @@ const simpleConverter = (queryValue, queryField) => {
             }
         }
 
-        key = operator == " AND " ? "must" : "should";
+        key = operator[0] == " AND " ? "must" : "should";
         if(!addOn.isEmpty(operant)){
-            if(key == "must" && boolOperant["must_not"]){
-                boolOperant[key].push(operant);
-            }else{
-                boolOperant[key] = operant;
+            boolOperant[key] = operant;
+
+            if(key == "should" && boolOperant["must_not"]){
+                boolOperant.should.push({"bool": {"must_not": boolOperant["must_not"]}});
+                boolOperant["must_not"] = undefined;
             }
         }
     }
@@ -103,6 +104,10 @@ const simpleConverter = (queryValue, queryField) => {
     return boolOperant;
 }
 
+/*
+This method handle nested not condition. i.e NOT (X OR B). This condition cannot be process using
+simple converter because we have to do deMorgan's rule to process this condition into NOT X AND NOT B.
+*/
 const notConverter = (expr, queryField) =>{
     pattern = expr.match(/( AND | OR )/gi);
 
@@ -111,6 +116,16 @@ const notConverter = (expr, queryField) =>{
             queryValue = deMorganLaw(expr);
             queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
             return simpleConverter(queryValue, queryField);
+        }else{
+            // return {"must":[{"has_child":{"type": "sentiment","query": {"bool":{}}}}]}
+            queryValue = deMorganLaw(expr);
+            queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
+            let query = simpleConverter(queryValue, queryField);
+
+            must_not = query.must_not;
+            query.must_not = [{"bool":{"must": must_not}}];
+
+            return query;
         }
     }
 
@@ -122,8 +137,6 @@ const deMorganLaw = (expr) => {
 
     let result = ""
     str = expr;
-
-    console.log(str);
 
     if(pattern){
         for(item of pattern){
@@ -156,15 +169,20 @@ const deMorganLaw = (expr) => {
     return result;
 }
 
+/*
+This method handle complex condition, normally nested condition and transform that complex condition
+into simpler condition, so simpleconverter and nestedconverter can convert that condition.
+*/
 const moreComplexConverter = (queryValue, queryField, pattern) => {
+    let query;
     if(queryValue.includes("OR")){
-        var query = nestedConvert(queryValue, queryField, pattern, " OR ");
+        query = nestedConvert(queryValue, queryField, pattern, " OR ");
 
         query = {
             "should": query
         }
     }else if(queryValue.includes("AND")){
-        var query = nestedConvert(queryValue, queryField, pattern, " AND ");
+        query = nestedConvert(queryValue, queryField, pattern, " AND ");
 
         query = {
             "must": query
@@ -176,9 +194,9 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
         childValue = childValue.replace("(","").replace(")","");
 
         if(childValue.includes("$")){
-            var query = moreComplexConverter(childValue, queryField, pattern);
+            query = moreComplexConverter(childValue, queryField, pattern);
         }else{
-            var query = simpleConverter(childValue, queryField);
+            query = simpleConverter(childValue, queryField);
             if(query.error){
                 return query;
             }
@@ -188,80 +206,45 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
     return query;
 }
 
-const convertAggregation = (aggs, index = 0) => {
-    var aggrQuery = {}
-    try {
-        item = aggs[index]
+/*
+This method convert date range from dd/mm/yyyy format into milliseconds format
+*/
+exports.convertInputRange = (range) => {
+    let dateRange = [];
 
-        if(item.field.includes(">")){
-            value = item.field.split(">");
-            temp = `{"${item.name}": {"${value[0]}": {"type":"${value[1]}"}}}`;
-        }else{
-            temp = `{"${item.name}": {"terms": {"field": "${item.field}"}}}`;
+    let dateArr = range.split(" - ");
+    for(item in dateArr){
+        let itemArr = dateArr[item].split("/");
+        let date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
+        if(item == dateArr.length-1){
+            date.setHours(23);
+            date.setMinutes(59);
+            date.setSeconds(59);
         }
 
-        aggrQuery = JSON.parse(temp);
-
-        if(index+1 < aggs.length){
-            aggrQuery[item.name].aggs = convertAggregation(aggs, index+1);
-        }
-    } catch (error) {
-        console.log(error.message);
+        dateRange.push(date.getTime());
     }
 
-    return aggrQuery;
+    return dateRange;
 }
 
-exports.numberRangeConvert = (rangeArr) => {
-    var from = rangeArr[0];
-    var to = rangeArr[1];
-    var range = {};
-    
-    if(from > 0 ){
-        range.gte = from;
-    }
-
-    if(to > 0){
-        range.lte = to;
-    }
-
-    return range
-}
-
-exports.rangeConvert = (rangeArr) => {
-    var from = rangeArr[0];
-    var to = rangeArr[1];
-    var d = new Date();
-    var currentMs = d.getTime();
-    
-    if(from == "now"){
-        to = from = currentMs;
-    }else if(to == "now"){
-        to = currentMs;
-    }
-    
-    var range = {
-        "from": from,
-        "to": to
-    };
-    
-    return range;
-}
-
+/*
+Main Method to do conversion
+*/
 exports.convertQuery = (queryValue, queryField) => {
-    var result = {};
+    let result = {};
     try {
         strQueryValue = queryValue;
         regex = /(\([\$\w\s]+\))/gi
         pattern = queryValue.match(regex);
-        var query = {}
+        let query = {}
 
         if(pattern){
             oldSize = 0;
             patternSize = pattern.length;
 
             while(patternSize > 0 && patternSize > oldSize){
-                var i = 1;
+                let i = 1;
                 for (item of pattern){
                     queryValue = queryValue.replace(item, `$${i}`);
                     i+= 1;
@@ -276,7 +259,7 @@ exports.convertQuery = (queryValue, queryField) => {
                 patternSize = pattern.length;
             }
 
-            if(queryValue.match(/NOT\s?\(+/)){
+            if(strQueryValue.match(/NOT\s?\(+/)){
                 query = notConverter(strQueryValue, queryField)
             }else{
                 query = moreComplexConverter(queryValue, queryField, pattern);
@@ -303,6 +286,9 @@ exports.convertQuery = (queryValue, queryField) => {
     return result;
 }
 
+/*
+This method merge 2 conditional query into 1 conditional query in AND conditional manner
+*/
 exports.andMerge = (query1, query2) => {
     if(query1.query.bool.must){
         query1.query.bool.must.push(query2.query);
@@ -313,14 +299,15 @@ exports.andMerge = (query1, query2) => {
     return query1;
 }
 
+/*
+This method merge 2 conditional query into 1 conditional query in OR conditional manner
+*/
 exports.mergeQuery = (query1, query2) => {
     if(query2.query.bool.must){
-        for(item of query2.query.bool.must){
-            if(query1.query.bool.must){
-                query1.query.bool.must.push(item);
-            }else{
-                query1.query.bool.must = [item];
-            }
+        if(query1.query.bool.should){
+            query1.query.bool.should.push({"bool":{"must":query2.query.bool.must}});
+        }else{
+            query1.query.bool.should = [{"bool":{"must":query2.query.bool.must}}];
         }
     }
 
