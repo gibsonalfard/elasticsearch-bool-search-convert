@@ -16,7 +16,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
             childValue = reference[(tmp-1)];
             childValue = childValue.replace("(","").replace(")","");
             
-            var childQuery = simpleConverter(childValue, queryField);
+            let childQuery = simpleConverter(childValue, queryField);
             if(childQuery.error){
                 return childQuery;
             }
@@ -26,7 +26,7 @@ const nestedConvert = function(queryValue, queryField, reference, splitOpr){
             };
             parentOperant.push(childQuery);
         }else if(item){
-            var childQuery = simpleConverter(item, queryField);
+            let childQuery = simpleConverter(item, queryField);
             if(childQuery.error){
                 return childQuery;
             }
@@ -47,7 +47,7 @@ This method handle conversion of simple boolean condition such as NOT, AND, and 
 into Elasticsearch boolean search query format.
 */
 const simpleConverter = (queryValue, queryField) => {
-    var boolOperant = {
+    let boolOperant = {
         "must": [JSON.parse(`{"term": {"${queryField}":"${queryValue}"}}`)]
     }
 
@@ -55,7 +55,7 @@ const simpleConverter = (queryValue, queryField) => {
     pattern = queryValue.match(regex);
 
     if(pattern){
-        var operant = [];
+        let operant = [];
         queryValue = queryValue.replace(/NOT \w+/gi, "");
         
         for (item of pattern){
@@ -81,7 +81,7 @@ const simpleConverter = (queryValue, queryField) => {
         }
         
         list = queryValue.split(operator[0]);
-        var operant = [];
+        let operant = [];
 
         for(item of list){
             if(item != " " && item != ""){
@@ -90,7 +90,7 @@ const simpleConverter = (queryValue, queryField) => {
             }
         }
 
-        key = operator == " AND " ? "must" : "should";
+        key = operator[0] == " AND " ? "must" : "should";
         if(!addOn.isEmpty(operant)){
             boolOperant[key] = operant;
 
@@ -120,7 +120,7 @@ const notConverter = (expr, queryField) =>{
             // return {"must":[{"has_child":{"type": "sentiment","query": {"bool":{}}}}]}
             queryValue = deMorganLaw(expr);
             queryValue = queryValue.replace(/\(/g,"").replace(/\)/g,"");
-            var query = simpleConverter(queryValue, queryField);
+            let query = simpleConverter(queryValue, queryField);
 
             must_not = query.must_not;
             query.must_not = [{"bool":{"must": must_not}}];
@@ -174,14 +174,15 @@ This method handle complex condition, normally nested condition and transform th
 into simpler condition, so simpleconverter and nestedconverter can convert that condition.
 */
 const moreComplexConverter = (queryValue, queryField, pattern) => {
+    let query;
     if(queryValue.includes("OR")){
-        var query = nestedConvert(queryValue, queryField, pattern, " OR ");
+        query = nestedConvert(queryValue, queryField, pattern, " OR ");
 
         query = {
             "should": query
         }
     }else if(queryValue.includes("AND")){
-        var query = nestedConvert(queryValue, queryField, pattern, " AND ");
+        query = nestedConvert(queryValue, queryField, pattern, " AND ");
 
         query = {
             "must": query
@@ -193,9 +194,9 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
         childValue = childValue.replace("(","").replace(")","");
 
         if(childValue.includes("$")){
-            var query = moreComplexConverter(childValue, queryField, pattern);
+            query = moreComplexConverter(childValue, queryField, pattern);
         }else{
-            var query = simpleConverter(childValue, queryField);
+            query = simpleConverter(childValue, queryField);
             if(query.error){
                 return query;
             }
@@ -209,12 +210,12 @@ const moreComplexConverter = (queryValue, queryField, pattern) => {
 This method convert date range from dd/mm/yyyy format into milliseconds format
 */
 exports.convertInputRange = (range) => {
-    var dateRange = [];
+    let dateRange = [];
 
-    var dateArr = range.split(" - ");
+    let dateArr = range.split(" - ");
     for(item in dateArr){
-        var itemArr = dateArr[item].split("/");
-        var date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
+        let itemArr = dateArr[item].split("/");
+        let date = new Date(itemArr[2], itemArr[1]-1, itemArr[0]);
         if(item == dateArr.length-1){
             date.setHours(23);
             date.setMinutes(59);
@@ -231,19 +232,19 @@ exports.convertInputRange = (range) => {
 Main Method to do conversion
 */
 exports.convertQuery = (queryValue, queryField) => {
-    var result = {};
+    let result = {};
     try {
         strQueryValue = queryValue;
         regex = /(\([\$\w\s]+\))/gi
         pattern = queryValue.match(regex);
-        var query = {}
+        let query = {}
 
         if(pattern){
             oldSize = 0;
             patternSize = pattern.length;
 
             while(patternSize > 0 && patternSize > oldSize){
-                var i = 1;
+                let i = 1;
                 for (item of pattern){
                     queryValue = queryValue.replace(item, `$${i}`);
                     i+= 1;

@@ -20,8 +20,8 @@ exports.quoteFormatter = (text, list) => {
 Format response from Elasticsearch into simpler and readable format
 */
 exports.outputJSONFormatter = (elasticResponse) => {
-    var jsonData = [];
-    var formatData = {};
+    let jsonData = [];
+    let formatData = {};
 
     // Only return some of field returned by Elasticsearch
     for(hit of elasticResponse.hits.hits){
@@ -45,11 +45,11 @@ exports.outputJSONFormatter = (elasticResponse) => {
 Format Histogram response from Elasticsearch into simpler and readable format
 */
 exports.histogramFormatter = (elasticResponse) => {
-    var historamJSON = [];
-    var sentimentStr = "";
-    var sentimentList = [];
+    let historamJSON = [];
+    let sentimentStr = "";
+    let sentimentList = [];
 
-    var emptySentimentList = true;
+    let emptySentimentList = true;
 
     // Get Only Histogram Aggregation Data
     for(item of elasticResponse.aggregations["sentiment_over_time"].buckets){
@@ -88,8 +88,8 @@ exports.histogramFormatter = (elasticResponse) => {
 Make JSON object that have zero value for every sentiment in sentimentList
 */
 const makeZeroSentiment = (sentimentList) => {
-    var sentimentStr = "{";
-    var item;
+    let sentimentStr = "{";
+    let item;
     for(item of sentimentList){
         sentimentStr = sentimentStr.concat(`"${item}": 0, `);
     }
@@ -102,8 +102,8 @@ const makeZeroSentiment = (sentimentList) => {
 Method to create sentimentList from aggregation data returned by Elasticsearch 
 */
 const findSentimentList = (sentimentArr) => {
-    var sentimentList = [];
-    var item;
+    let sentimentList = [];
+    let item;
     for(item of sentimentArr){
         if(item["to-sentiment"]["doc_count"] > 0){
             for(sentimentItem of item["to-sentiment"].sentiment.buckets){
@@ -120,7 +120,7 @@ const findSentimentList = (sentimentArr) => {
 Find sentiment by sentiment id
 */
 const getSentimentById = (id, aggregation) => {
-    var sentimentRaw = {};
+    let sentimentRaw = {};
 
     for(item of aggregation["by-news-id"].buckets){
         if(id == item.key){
@@ -129,8 +129,8 @@ const getSentimentById = (id, aggregation) => {
         }
     }
 
+    let sentimentStr = "{";
     if(sentimentRaw["to-sentiment"]){
-        var sentimentStr = "{";
         for(item of sentimentRaw["to-sentiment"]["by-sentiment"].buckets){
             sentimentStr = sentimentStr.concat(`"${item.key}": ${item.doc_count}, `);
         }

@@ -45,24 +45,24 @@ ready to run in Elasticsearch. This method will call another method to convert q
 post convertion method to handle another conditional query such as max, select, and range.
 */
 exports.queryCondition = (jsonData) => {
-    var baseQuery = jsonData.request.query;
-    var query = {
+    let baseQuery = jsonData.request.query;
+    let query = {
         "query": {
             "bool": {}
         }
     };
 
-    var index = 0;
+    let index = 0;
     if (baseQuery) {
         for (listQuery of baseQuery) {
             if (!isValidQuery(listQuery)){
                 return { "error": "Query is incomplete"};
             }
 
-            var queryValue = listQuery.value;
-            var queryField = listQuery.field;
-            var queryRange = listQuery.range;
-            var andMerge = (index > 0 && listQuery.andMerge) ? listQuery.andMerge : false;
+            let queryValue = String(listQuery.value).trim();
+            let queryField = String(listQuery.field).trim();
+            let queryRange = listQuery.range;
+            let andMerge = (index > 0 && listQuery.andMerge) ? listQuery.andMerge : false;
 
             if (queryValue) {
                 // Format queryValue
@@ -72,7 +72,7 @@ exports.queryCondition = (jsonData) => {
                 }
 
                 // Convert input query into bool search query for Elasticsearch
-                var queryTemp = converter.convertQuery(queryValue, queryField);
+                let queryTemp = converter.convertQuery(queryValue, queryField);
                 if (queryTemp.error) {
                     return queryTemp;
                 }
@@ -107,10 +107,10 @@ body is Request Body that contain boolean query
 ip is client address that hit this middleware
  */
 exports.logAccess = (endpoint, body, ip) => {
-    var date = new Date();
+    let date = new Date();
     // Change Timezone to Asia/Jakarta (+7)
     date.setHours(date.getHours() + 7);
-    var dateStr = date.toISOString();
+    let dateStr = date.toISOString();
 
     console.log(dateStr, "IP-ADDRESS", ip);
     console.log(dateStr, "ENDPOINT", endpoint);
@@ -124,8 +124,8 @@ This method check if two parameter is a same day. This method have 2 date parame
 and time in 'to' always set to 23:59:59.
 */
 exports.isSameDay = (from, to) => {
-    var fromDate = new Date(from);
-    var toDate = new Date(to);
+    let fromDate = new Date(from);
+    let toDate = new Date(to);
 
     return (fromDate.getFullYear() == toDate.getFullYear()) 
         && (fromDate.getMonth() == toDate.getMonth()) 

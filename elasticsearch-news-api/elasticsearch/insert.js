@@ -4,7 +4,7 @@ const elastic = require("./config");
 const format = require("./format");
 
 exports.bulkInsert = async (body) => {
-    var { body: bulkResponse } = await elastic.bulk({ refresh: true, body });
+    let { body: bulkResponse } = await elastic.bulk({ refresh: true, body });
 
     if(bulkResponse.error){
         console.log("Error exist in query, cannot insert data to Elasticsearch");
@@ -18,9 +18,9 @@ exports.bulkDataNews = function(index, data){
     // Input : Data From MongoDB
     // Output : JSON Format Body for Bulk Insert on Elasticsearch
 
-    var bulkBerita = [];
+    let bulkBerita = [];
 
-    for(var berita of data){
+    for(let berita of data){
         bulkBerita.push(
             {index: {_index: index, _type: '_doc', _id: berita["_id"]}},
             {
@@ -73,9 +73,9 @@ exports.bulkDataSentiment = function(index, data){
     // Input : Data From MongoDB
     // Output : JSON Format Body for Bulk Insert Sentiment on Elasticsearch
 
-    var bulkSentiment = [];
+    let bulkSentiment = [];
 
-    for(var sentiment of data){
+    for(let sentiment of data){
         bulkSentiment.push(
             {index: {_index: index, _type: '_doc', _id: sentiment["id"], routing: sentiment["news_join"]["parent"]}},
             sentiment

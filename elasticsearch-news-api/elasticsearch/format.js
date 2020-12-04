@@ -1,5 +1,5 @@
 exports.getMeta = (id, url, path) => {
-    var meta = {
+    let meta = {
         "avatar": "",
         "mongodb_id": id,
         "path": path,
@@ -26,7 +26,7 @@ exports.getMeta = (id, url, path) => {
 }
 
 exports.getAnalysisNews = () => {
-    var analysis = {
+    let analysis = {
         "age": "",
         "lang": "",
         "picture_address": "",

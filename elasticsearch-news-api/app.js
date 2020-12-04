@@ -20,14 +20,15 @@ app.get("/", (req, res)=>{
 
 app.get("/search", async (req, res) => {
     // Logging Variable
-    var ip = req.headers['x-forwarded-for'] || 
+    let ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     addOn.logAccess("[GET] /search", req.body, ip);
 
-    var data = {};
+    let data = {};
+    let query;
     // Convert Request to Elasticsearch Boolean Search
     try {
         jsonData = req.body;
@@ -36,7 +37,7 @@ app.get("/search", async (req, res) => {
             return 0;
         }
 
-        var query = addOn.queryCondition(jsonData)
+        query = addOn.queryCondition(jsonData)
         if(query.error){
             console.log(query.error);
             res.json(query);
@@ -51,19 +52,19 @@ app.get("/search", async (req, res) => {
         data = {"error": error.message}
     }
 
-    res.json(data);
+    res.json(query);
 });
 
 app.get("/search/sentiment", async (req, res) => {
     // Logging Variable
-    var ip = req.headers['x-forwarded-for'] || 
+    let ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     addOn.logAccess("[GET] /search/sentiment", req.body, ip);
 
-    var data = {};
+    let data = {};
 
     try {
         jsonData = req.body;
@@ -72,7 +73,7 @@ app.get("/search/sentiment", async (req, res) => {
             return 0;
         }
 
-        var query = addOn.queryCondition(jsonData)
+        let query = addOn.queryCondition(jsonData)
         if(query.error){
             console.log(query.error);
             res.json(query);
@@ -114,15 +115,15 @@ app.get("/search/sentiment", async (req, res) => {
 
 app.get("/search/sentiment/histogram", async (req, res) => {
     // Logging Variable
-    var ip = req.headers['x-forwarded-for'] || 
+    let ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
-    var data = {};
-    var toDate = new Date();
-    var fromDate = new Date();
-    var urlLog = "[GET] /search/sentiment/histogram";
+    let data = {};
+    let toDate = new Date();
+    let fromDate = new Date();
+    let urlLog = "[GET] /search/sentiment/histogram";
 
     toDate.setDate(30);
     toDate = zeroHour(toDate);
@@ -145,7 +146,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
             req.body.request.range = [from, to];
         }
 
-        var interval = addOn.isSameDay(from, to) ? "hour" : "week";
+        let interval = addOn.isSameDay(from, to) ? "hour" : "week";
         if(req.query.interval){
             interval = req.query.interval;
             urlLog = `[GET] /search/sentiment/histogram?interval=${interval}`;
@@ -156,7 +157,7 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 
         jsonData = req.body;
         
-        var query = addOn.queryCondition(jsonData)
+        let query = addOn.queryCondition(jsonData)
         if(query.error){
             console.log(query.error);
             res.json(query);
@@ -208,41 +209,41 @@ app.get("/search/sentiment/histogram", async (req, res) => {
 });
 
 app.post("/news/add", async (req, res) => {
-    var ip = req.headers['x-forwarded-for'] || 
+    let ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     addOn.logAccess("[POST] /news/add/", req.body.request.source, ip);
 
-    var requestBody = req.body.request;
-    var data = requestBody.data;
-    var index = requestBody.source;
+    let requestBody = req.body.request;
+    let data = requestBody.data;
+    let index = requestBody.source;
 
     // Format Data 
-    var body = insertData.bulkDataNews(index, data);
+    let body = insertData.bulkDataNews(index, data);
     // Do bulk Insert
-    var response = await insertData.bulkInsert(body);
+    let response = await insertData.bulkInsert(body);
 
     res.json(response);
 });
 
 app.post("/sentiment/add", async (req, res) => {
-    var ip = req.headers['x-forwarded-for'] || 
+    let ip = req.headers['x-forwarded-for'] || 
      req.connection.remoteAddress || 
      req.socket.remoteAddress ||
      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     addOn.logAccess("[POST] /sentiment/add/", req.body.request.source, ip);
 
-    var requestBody = req.body.request;
-    var data = requestBody.data;
-    var index = requestBody.source;
+    let requestBody = req.body.request;
+    let data = requestBody.data;
+    let index = requestBody.source;
 
     // Format Data 
-    var body = insertData.bulkDataSentiment(index, data);
+    let body = insertData.bulkDataSentiment(index, data);
     // Do bulk Insert
-    var response = await insertData.bulkInsert(body);
+    let response = await insertData.bulkInsert(body);
 
     res.json(response);
 });
