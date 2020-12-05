@@ -80,7 +80,7 @@ class DataFormatter {
                 let key = data[i]._fields[j].labels[0];
                 if(key == "Sentiment") {
                     let feature = data[i]._fields.filter(o => {
-                        if(o.labels[0] === "Feature") {
+                        if(o.labels && o.labels[0] === "Feature") {
                             return o.properties;
                         }
                     })
@@ -102,15 +102,15 @@ class DataFormatter {
             }
             for(let k = i+1; k < data.length; k++) {
                 let array = data[k]._fields.filter(o => 
-                    o.labels[0] == "News" && JSON.stringify(o.properties) === JSON.stringify(news));
+                    o.labels && o.labels[0] == "News" && JSON.stringify(o.properties) === JSON.stringify(news));
                 if(array.length > 0) {
                     let sentiment = data[k]._fields.filter(o => {
-                        if(o.labels[0] === "Sentiment") {
+                        if(o.labels && o.labels[0] === "Sentiment") {
                             return o.properties;
                         }
                     })
                     let feature = data[k]._fields.filter(o => {
-                        if(o.labels[0] === "Feature") {
+                        if(o.labels && o.labels[0] === "Feature") {
                             return o.properties;
                         }
                     })
